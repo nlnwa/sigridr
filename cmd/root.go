@@ -33,14 +33,14 @@ var (
 	consumerKey    string
 	consumerSecret string
 	accessToken    string
-	debug bool
+	debug          bool
 )
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "sigridr",
 	Short: "Twitter API client",
-	Long: `Twitter API client`,
+	Long:  `Twitter API client`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
@@ -63,12 +63,11 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&consumerSecret, "consumer-secret", "s", "", "Consumer secret")
 	RootCmd.PersistentFlags().StringVarP(&consumerKey, "consumer-key", "k", "", "Consumer key")
 	RootCmd.PersistentFlags().StringVarP(&accessToken, "access-token", "a", "", "Access token")
-	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Turn on debugging")
+	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "", false, "Turn on debugging")
 
 	viper.BindPFlag("consumer-secret", RootCmd.PersistentFlags().Lookup("consumer-secret"))
 	viper.BindPFlag("consumer-key", RootCmd.PersistentFlags().Lookup("consumer-key"))
 	viper.BindPFlag("access-token", RootCmd.PersistentFlags().Lookup("access-token"))
-
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 }
 
@@ -81,8 +80,7 @@ func initConfig() {
 	// Find home directory.
 	home, err := homedir.Dir()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	if cfgFile != "" {
@@ -114,13 +112,14 @@ func initConfig() {
 		util.WriteConfig()
 	}
 
-	// If access token provided, use it (not stored in config)
+	// If access token provided, use it and store it
 	if accessToken != "" {
 		viper.Set("token", &oauth2.Token{AccessToken: accessToken})
+		util.WriteConfig()
 	}
 
 	// Exit if no token provided
 	if token := viper.Get("token"); token == nil {
-		log.Fatal("No access token provider")
+		log.Fatal("No access token provided")
 	}
 }
