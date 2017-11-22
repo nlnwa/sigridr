@@ -24,14 +24,18 @@ import (
 )
 
 type config struct {
-	consumerKey    string       `json:"consumer-key"`
-	consumerSecret string       `json:"consumer-secret"`
-	Token          oauth2.Token `json:"token"`
+	consumerKey     string       `json:"consumer-key"`
+	consumerSecret  string       `json:"consumer-secret"`
+	Token           oauth2.Token `json:"token"`
 }
 
+// Write config file
+//
+// Replaces consumer key and consumer secret with oauth2 access token
 func WriteConfig() {
-	token := viper.Get("token").(*oauth2.Token)
-	c := config{Token: *token}
+	c := config{
+		Token: *viper.Get("token").(*oauth2.Token),
+		}
 
 	y, err := yaml.Marshal(c)
 	if err != nil {
