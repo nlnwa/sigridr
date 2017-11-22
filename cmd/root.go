@@ -117,9 +117,4 @@ func initConfig() {
 		viper.Set("token", &oauth2.Token{AccessToken: accessToken})
 		util.WriteConfig()
 	}
-
-	// Exit if no token provided
-	if token := viper.Get("token"); token == nil {
-		log.Fatal("No access token provided")
-	}
 }
