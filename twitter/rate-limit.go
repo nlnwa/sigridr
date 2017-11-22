@@ -27,12 +27,13 @@ const headerPrefix = "X-Rate-Limit-"
 type RateLimit struct {
 	Limit int
 	Remaining int
-	Reset int64
+	Reset time.Time
 }
 
-func newRateLimit(response *http.Response) *RateLimit {
+// NewRateLimit creates an instance of RateLimit based on HTTP Headers
+func NewRateLimit(header *http.Header) *RateLimit {
 	rateLimit := new(RateLimit)
-	for key, value := range response.Header {
+	for key, value := range *header {
 		if strings.HasPrefix(key, headerPrefix) {
 			n, err := strconv.ParseInt(value[0], 10, 32)
 			if err != nil {
@@ -40,7 +41,7 @@ func newRateLimit(response *http.Response) *RateLimit {
 			}
 			switch strings.TrimPrefix(key, headerPrefix) {
 			case "Reset":
-				rateLimit.Reset = n
+				rateLimit.Reset = time.Unix(n, 0)
 			case "Limit":
 				rateLimit.Limit = int(n)
 			case "Remaining":
@@ -49,8 +50,4 @@ func newRateLimit(response *http.Response) *RateLimit {
 		}
 	}
 	return rateLimit
-}
-
-func (rl *RateLimit) resetIn() time.Time {
-	return time.Unix(rl.Reset, 0)
 }
