@@ -20,6 +20,7 @@ import (
 	"golang.org/x/oauth2"
 	"net/http"
 	"time"
+	"log"
 )
 
 const TWITTER_OAUTH2_TOKEN_URL = "https://api.twitter.com/oauth2/token"
@@ -47,7 +48,7 @@ func convertToOauth2Token(token interface{}) *oauth2.Token {
 	switch token.(type) {
 	case *oauth2.Token:
 		return token.(*oauth2.Token)
-	default:
+	case map[string]interface{}:
 		t := token.(map[string]interface{})
 		accessToken := t["access_token"].(string)
 		expiry, _ := time.Parse(time.RFC3339, t["expiry"].(string))
@@ -57,5 +58,8 @@ func convertToOauth2Token(token interface{}) *oauth2.Token {
 			Expiry:      expiry,
 			TokenType:   tokenType,
 		}
+	default:
+		log.Fatal("Must have an access token")
+		return nil
 	}
 }
