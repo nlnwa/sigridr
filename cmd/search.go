@@ -22,7 +22,7 @@ import (
 	"github.com/nlnwa/sigridr/auth"
 	"github.com/nlnwa/sigridr/twitter"
 	"github.com/nlnwa/sigridr/db"
-	"fmt"
+	log "github.com/sirupsen/logrus"
 )
 
 var save bool
@@ -47,7 +47,10 @@ var searchCmd = &cobra.Command{
 			db.Insert("result", tweets)
 		} else {
 			for index, tweet := range tweets {
-				fmt.Printf("[%v] : %v\n", index, tweet.FullText)
+				log.WithFields(log.Fields{
+					"n":        index,
+					"FullText": tweet.FullText,
+				}).Println("Tweet")
 			}
 		}
 	},

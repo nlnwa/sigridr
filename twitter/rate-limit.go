@@ -25,9 +25,9 @@ import (
 const headerPrefix = "X-Rate-Limit-"
 
 type RateLimit struct {
-	Limit int
+	Limit     int
 	Remaining int
-	Reset time.Time
+	Reset     time.Time
 }
 
 // NewRateLimit creates an instance of RateLimit based on HTTP Headers

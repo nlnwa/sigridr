@@ -22,27 +22,27 @@ import (
 func CreateDb(name string) {
 	result, err := r.DBCreate(name).RunWrite(session)
 	if err != nil {
-		log.Error(err)
+		log.WithError(err).Errorln("Creating database")
 	}
 	if n := result.DBsCreated; n > 0 {
-		log.Debug("Database created: ", name)
+		log.WithFields(log.Fields{"name": name}).Debug("Database created")
 	}
 }
 
 func CreateTable(name string) {
 	result, err := r.TableCreate(name).RunWrite(session)
 	if err != nil {
-		log.Error(err)
+		log.WithError(err).Error("Creating table")
 	}
 	if n := result.TablesCreated; n > 0 {
-		log.Debug("Table created: ", name)
+		log.WithFields(log.Fields{"name": name}).Debug("Table created")
 	}
 }
 
 func Insert(table string, data interface{}) {
 	result, err := r.Table(table).Insert(data).RunWrite(session)
 	if err != nil {
-		log.Errorln(err)
+		log.WithError(err).Errorln("Inserting data")
 	}
 	log.Debugln(result)
 }

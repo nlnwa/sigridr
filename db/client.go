@@ -31,7 +31,9 @@ func Connect(opts r.ConnectOpts) {
 	if err != nil {
 		log.Fatalln(err.Error())
 	} else {
-		log.Debugf("Database session: connected to %+v", opts.Address)
+		log.WithFields(log.Fields{
+			"address": opts.Address,
+		}).Debugln("Database session: connected")
 	}
 }
 

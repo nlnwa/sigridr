@@ -19,7 +19,6 @@ import (
 
 	"github.com/dghubble/go-twitter/twitter"
 	log "github.com/sirupsen/logrus"
-	"fmt"
 )
 
 // Wrap go-twitter
@@ -42,33 +41,42 @@ func (client *Client) Search(params *SearchParams) []twitter.Tweet {
 
 	search, response, err := client.lib.Search.Tweets(params)
 	if err != nil {
-		log.Error(err)
+		log.WithError(err).Errorln("Searching twitter")
 	}
 
 	// DEBUG
 	if log.GetLevel() == log.DebugLevel {
 		// Protocol
-		log.Debugln("Protocol:", response.Proto)
-		fmt.Println()
+		log.WithField("Protocol", response.Proto).Debugln("Protocol")
 
 		// HTTP Headers
 		for k, v := range response.Header {
 			switch k {
 			default:
-				log.Debugln(k, v)
+				log.WithField(k, v).Debugln("HTTP Header")
 			}
 		}
-		fmt.Println()
 
 		// Twitter Search API Metadata
-		log.Debugf("Metadata: %v\n", search.Metadata)
+		log.WithFields(log.Fields{
+			"Count":       search.Metadata.Count,
+			"SinceID":     search.Metadata.SinceID,
+			"SinceIDStr":  search.Metadata.SinceIDStr,
+			"MaxID":       search.Metadata.MaxID,
+			"MaxIDStr":    search.Metadata.MaxIDStr,
+			"RefreshURL":  search.Metadata.RefreshURL,
+			"NextResults": search.Metadata.NextResults,
+			"CompletedIn": search.Metadata.CompletedIn,
+			"Query":       search.Metadata.Query,
+		}).Debugln("Metadata describes a search result")
 
 		// Rate rimits
 		rl := NewRateLimit(&response.Header)
-		log.Debugln("Rate limit: ", rl.Limit)
-		log.Debugln("Rate remaining: ", rl.Remaining)
-		log.Debugln("Time when rate limit resets: ", rl.Reset)
-		fmt.Println()
+		log.WithFields(log.Fields{
+			"limit":     rl.Limit,
+			"remaining": rl.Remaining,
+			"reset":     rl.Reset,
+		}).Debugln("Rate limit")
 	}
 	return search.Statuses
 }

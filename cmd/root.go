@@ -15,8 +15,6 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
 	"strings"
 
 	"golang.org/x/oauth2"
@@ -50,8 +48,7 @@ var RootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.WithError(err).Fatal()
 	}
 }
 
@@ -80,7 +77,7 @@ func initConfig() {
 	// Find home directory.
 	home, err := homedir.Dir()
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal()
 	}
 
 	if cfgFile != "" {
@@ -97,7 +94,11 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		log.Debugf("Using config file: %s", viper.ConfigFileUsed())
+		log.WithFields(log.Fields{"path": viper.ConfigFileUsed()}).Debugln("Configuration file used")
+
+		for _, key := range viper.AllKeys() {
+			log.WithField(key, viper.Get(key)).Debugln("Configuration value")
+		}
 	} else {
 		viper.SetConfigFile(home + "/.sigridr.yaml")
 	}
@@ -106,7 +107,7 @@ func initConfig() {
 	if ck, cs := viper.GetString("consumer-key"), viper.GetString("consumer-secret"); ck != "" && cs != "" {
 		token, err := auth.GetTwitterOauth2Token(ck, cs)
 		if err != nil {
-			log.Fatal(err)
+			log.WithError(err).Fatal()
 		}
 		viper.Set("token", token)
 		util.WriteConfig()

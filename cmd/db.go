@@ -29,12 +29,12 @@ var databaseAddress string
 var dbCmd = &cobra.Command{
 	Use:   "db",
 	Short: "Database test command",
-	Long: `Database test command`,
+	Long:  `Database test command`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		opts := db.Options{Database: "twitter"}
 		u, err := url.Parse(viper.GetString("database-address"))
 		if err != nil {
-			log.Fatal(err)
+			log.WithError(err).Fatal()
 		} else {
 			opts.Address = u.Path
 		}
@@ -63,7 +63,7 @@ var createCmd = &cobra.Command{
 		case "table":
 			db.CreateTable(arg)
 		default:
-			log.Println("No op", command)
+			log.Println("No op ", command)
 		}
 	},
 }
