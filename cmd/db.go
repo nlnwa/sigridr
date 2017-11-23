@@ -45,7 +45,7 @@ var dbCmd = &cobra.Command{
 	},
 }
 
-// createCmd represents the db init subcommand
+// createCmd represents the db create subcommand
 var createCmd = &cobra.Command{
 	Use:   "create db|table name",
 	Short: "Initialize database",

@@ -19,6 +19,7 @@ import (
 	r "gopkg.in/gorethink/gorethink.v3"
 )
 
+// Alias gorethink connect options
 type Options = r.ConnectOpts
 
 var session *r.Session
