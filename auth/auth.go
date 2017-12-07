@@ -15,11 +15,13 @@
 package auth
 
 import (
+	"net/http"
+	"time"
+
 	"golang.org/x/oauth2/clientcredentials"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
-	"net/http"
-	"time"
+	log "github.com/sirupsen/logrus"
 )
 
 const TWITTER_OAUTH2_TOKEN_URL = "https://api.twitter.com/oauth2/token"
@@ -34,28 +36,39 @@ func GetTwitterOauth2Token(key string, secret string) (*oauth2.Token, error) {
 }
 
 func HttpClient(token interface{}) *http.Client {
-	return httpClient(convertToOauth2Token(token))
+	return httpClient(unmarshalOauth2Token(token))
 }
 
 func httpClient(token *oauth2.Token) *http.Client {
 	config := &oauth2.Config{}
-	// token := &oauth2.Token{AccessToken: accessToken}
 	return config.Client(context.TODO(), token)
 }
 
-func convertToOauth2Token(token interface{}) *oauth2.Token {
+func unmarshalOauth2Token(token interface{}) *oauth2.Token {
 	switch token.(type) {
 	case *oauth2.Token:
 		return token.(*oauth2.Token)
-	default:
+	case map[string]interface{}:
+		ok := false
+		oauth2Token := &oauth2.Token{}
 		t := token.(map[string]interface{})
-		accessToken := t["access_token"].(string)
-		expiry, _ := time.Parse(time.RFC3339, t["expiry"].(string))
-		tokenType := t["token_type"].(string)
-		return &oauth2.Token{
-			AccessToken: accessToken,
-			Expiry:      expiry,
-			TokenType:   tokenType,
+
+		accessToken, ok := t["access_token"].(string)
+		if ok {
+			oauth2Token.AccessToken = accessToken
 		}
+		expiry, ok := t["expiry"].(string)
+		if ok {
+			expiryAsTime, _ := time.Parse(time.RFC3339, expiry)
+			oauth2Token.Expiry = expiryAsTime
+		}
+		tokenType, ok := t["token_type"].(string)
+		if ok {
+			oauth2Token.TokenType = tokenType
+		}
+		return oauth2Token
+	default:
+		log.Fatalln("Must have an access token")
+		return nil
 	}
 }

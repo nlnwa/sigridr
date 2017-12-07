@@ -12,40 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package util
+package db
 
 import (
-	"os"
-
-	"golang.org/x/oauth2"
-	"github.com/spf13/viper"
-	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
+	r "gopkg.in/gorethink/gorethink.v3"
 )
 
-type config struct {
-	consumerKey    string       `json:"consumer-key"`
-	consumerSecret string       `json:"consumer-secret"`
-	Token          oauth2.Token `json:"token"`
+// Alias gorethink connect options
+type Options = r.ConnectOpts
+
+var session *r.Session
+
+func Connect(opts r.ConnectOpts) {
+	var err error
+
+	// https://godoc.org/github.com/GoRethink/gorethink#ConnectOpts
+	session, err = r.Connect(opts)
+	if err != nil {
+		log.Fatalln(err.Error())
+	} else {
+		log.WithFields(log.Fields{
+			"address": opts.Address,
+		}).Debugln("Database session: connected")
+	}
 }
 
-// Write config file
-//
-// Replaces consumer key and consumer secret with oauth2 access token
-func WriteConfig() {
-	token := *viper.Get("token").(*oauth2.Token)
-	c := config{Token: token}
-
-	y, err := yaml.Marshal(c)
-	if err != nil {
-		log.Fatal(err)
+func Disconnect() {
+	if session.IsConnected() {
+		session.Close()
+		log.Debugln("Database session: closed")
 	}
-
-	f, err := os.Create(viper.ConfigFileUsed())
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	f.Chmod(0600)
-	f.Write(y)
 }

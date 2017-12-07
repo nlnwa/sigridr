@@ -21,22 +21,43 @@ import (
 	"github.com/spf13/viper"
 	"github.com/nlnwa/sigridr/auth"
 	"github.com/nlnwa/sigridr/twitter"
+	"github.com/nlnwa/sigridr/db"
+	log "github.com/sirupsen/logrus"
 )
 
-// getCmd represents the get command
-var getCmd = &cobra.Command{
-	Use:   "search",
+var save bool
+
+// searchCmd represents the search command
+var searchCmd = &cobra.Command{
+	Use:   "search query ...",
 	Short: "Query Twitter's Search API",
 	Long:  `Query Twitter's Search API`,
 	Run: func(cmd *cobra.Command, args []string) {
 		query := strings.Join(args, " ")
+		params := &twitter.SearchParams{Query: query}
 
 		httpClient := auth.HttpClient(viper.Get("token"))
 		client := twitter.NewClient(httpClient)
-		client.Search(query)
+		tweets := client.Search(params)
+
+		if save {
+			db.Connect(db.Options{Database: "sigridr"})
+			defer db.Disconnect()
+			db.CreateTable("result")
+			db.Insert("result", tweets)
+		} else {
+			for index, tweet := range tweets {
+				log.WithFields(log.Fields{
+					"n":        index,
+					"FullText": tweet.FullText,
+				}).Println("Tweet")
+			}
+		}
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(getCmd)
+	RootCmd.AddCommand(searchCmd)
+
+	searchCmd.PersistentFlags().BoolVarP(&save, "save", "", false, "Save result")
 }
