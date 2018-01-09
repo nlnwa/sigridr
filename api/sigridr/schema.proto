@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package sigridr;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+message Meta {
+    string name = 1;
+    string description = 2;
+    google.protobuf.Timestamp create_time = 3 [json_name = "create_time"];
+    string created_by = 4 [json_name = "created_by"];
+    google.protobuf.Timestamp update_time = 5 [json_name = "update_time"];
+    string last_modified_by = 6 [json_name = "last_modified_by"];
+    map<string, string> labels = 7;
+}
+
+message Entity {
+    string id = 1;
+    Meta meta = 2;
+}
+
+message Job {
+    string id = 1;
+    Meta meta = 2;
+    string cron_expression = 3 [json_name = "cron_expression"];
+    google.protobuf.Timestamp valid_from = 4 [json_name = "valid_from"];
+    google.protobuf.Timestamp valid_to = 5 [json_name = "valid_to"];
+    bool disabled = 15;
+}
+
+message Seed {
+    string id = 1;
+    Meta meta = 2;
+    string entity_id = 3;
+    repeated string job_id = 4;
+    bool disabled = 15;
+}
+
+message SearchParameters {
+    string id = 1; // seed id
+    string query = 3;
+    string max_id = 4 [json_name = "max_id"];
+    string since_id = 5 [json_name = "since_id"];
+}
+message QueuedSeed {
+    string id = 1;
+    int32 seq = 2;
+    string ref = 3;
+    string seed_id = 4 [json_name = "seed_id"];
+    SearchParameters parameters = 5;    
+}
+
+message RateLimit {
+    int32 limit = 1;
+    int32 remaining = 2;
+    google.protobuf.Timestamp reset = 3;
+}
+
+/*
+message SearchMetadata {
+    int32 count = 1;
+    string since_id = 2 [json_name = "since_id"];
+    string max_id = 3 [json_name = "max_id"];
+    string refresh_url = 4 [json_name = "refresh_url"];
+    string next_results = 5 [json_name = "next_results"];
+    float completed_in = 6 [json_name = "completed_in"];
+    string query = 7;
+}
+
+message SearchResult {
+    string id = 1;
+    string ref = 2;
+    int32 seq = 3;
+    google.protobuf.Timestamp start_time = 4;
+}
+*/

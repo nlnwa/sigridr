@@ -21,8 +21,8 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/nlnwa/sigridr/auth"
-	"github.com/nlnwa/sigridr/util"
+	"github.com/nlnwa/sigridr/pkg/twitter/auth"
+	"github.com/nlnwa/sigridr/cmd/sigridrctl/config"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -110,12 +110,12 @@ func initConfig() {
 			log.WithError(err).Fatal()
 		}
 		viper.Set("token", token)
-		util.WriteConfig()
+		config.Write()
 	}
 
 	// If access token provided, use it and store it
-	if accessToken != "" {
-		viper.Set("token", &oauth2.Token{AccessToken: accessToken})
-		util.WriteConfig()
+	if accessToken := viper.Get("access-token"); accessToken != "" {
+		viper.Set("token", &oauth2.Token{AccessToken: accessToken.(string)})
+		config.Write()
 	}
 }

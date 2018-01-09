@@ -67,8 +67,10 @@ func unmarshalOauth2Token(token interface{}) *oauth2.Token {
 			oauth2Token.TokenType = tokenType
 		}
 		return oauth2Token
+	case string:
+		return &oauth2.Token{AccessToken:token.(string)}
 	default:
-		log.Fatalln("Must have an access token")
+		log.WithField("token", token).Fatalln("Must have an access token")
 		return nil
 	}
 }

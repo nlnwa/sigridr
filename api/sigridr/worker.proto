@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package sigridr;
+
+import "schema.proto";
+
+// Service for controlling frontier.
+service Worker {
+    rpc Do (WorkRequest) returns (WorkReply) {
+    }
+}
+
+message WorkRequest {
+    QueuedSeed queued_seed = 1 [json_name = "queued_seed"];
+}
+
+message WorkReply {
+    QueuedSeed queued_seed = 1 [json_name = "queued_seed"];
+    int32 Count = 2;
+    RateLimit rate_limit = 3 [json_name = "rate_limit"];
+}
