@@ -146,20 +146,6 @@ var createCmd = &cobra.Command{
 	},
 }
 
-var loadCmd = &cobra.Command{
-	Use:   "load infile",
-	Short: "Load twitter accounts",
-	Long:  `Initialize database`,
-	Args:  cobra.ExactArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
-		args := args[1:]
-
-		file := args[0]
-
-
-	},
-}
-
 func init() {
 	RootCmd.AddCommand(dbCmd)
 	dbCmd.AddCommand(createCmd)
