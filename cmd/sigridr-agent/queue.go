@@ -40,7 +40,7 @@ func queueWorker(ctx context.Context, wg *sync.WaitGroup) {
 			return
 		default:
 			if rateLimit.Remaining < 1 {
-				timeout = rateLimit.Timeout()
+				timeout = rateLimit.Timeout() + 5 * time.Second
 			} else if enqueued {
 				// queuedSeed was enqueued last dispatch
 				timeout = 0
@@ -48,7 +48,7 @@ func queueWorker(ctx context.Context, wg *sync.WaitGroup) {
 				// seed queue empty or dispatch error
 				timeout = time.Minute
 			}
-			log.WithField("timeout", timeout).Debugln("queueWorker()", "timer reset")
+			log.WithField("timeout", timeout).Debugln("sleeping")
 			timer.Reset(timeout)
 		}
 
