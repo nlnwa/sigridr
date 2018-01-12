@@ -17,6 +17,13 @@ type agent struct{}
 func (a *agent) Do(ctx context.Context, req *pb.DoJobRequest) (*google_protobuf.Empty, error) {
 	seed := new(types.Seed).FromProto(req.Seed)
 
+	if seed.Meta.Name == "" {
+		log.WithField("description", seed.Meta.Description).Debugln("Not enqueuing seed (no query)")
+		return new(google_protobuf.Empty), nil
+	}
+
+	log.WithField("description", seed.Meta.Description).Debugln("Enqueueing seed")
+
 	queuedSeed := &pb.QueuedSeed{
 		SeedId:     seed.Id,
 		Parameters: &pb.SearchParameters{Query: seed.Meta.Name},
