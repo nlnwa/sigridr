@@ -11,6 +11,7 @@ It is generated from these files:
 
 It has these top-level messages:
 	DoJobRequest
+	Label
 	Meta
 	Entity
 	Job

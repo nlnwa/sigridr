@@ -11,11 +11,11 @@ service Worker {
 }
 
 message WorkRequest {
-    QueuedSeed queued_seed = 1 [json_name = "queued_seed"];
+    QueuedSeed queued_seed = 1;
 }
 
 message WorkReply {
-    QueuedSeed queued_seed = 1 [json_name = "queued_seed"];
+    QueuedSeed queued_seed = 1;
     int32 Count = 2;
-    RateLimit rate_limit = 3 [json_name = "rate_limit"];
+    RateLimit rate_limit = 3;
 }
