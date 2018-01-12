@@ -18,13 +18,11 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/nlnwa/sigridr/api/sigridr"
 	"github.com/nlnwa/sigridr/pkg/db"
 	"github.com/nlnwa/sigridr/pkg/types"
 )
@@ -51,6 +49,8 @@ var dbCmd = &cobra.Command{
 		db.Disconnect()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		now := time.Now().UTC()
+
 		db.DropDatabase("sigridr")
 		db.CreateDatabase("sigridr")
 		db.Use("sigridr")
@@ -61,16 +61,12 @@ var dbCmd = &cobra.Command{
 		db.CreateTable("seed_queue")
 		db.CreateTable("search_parameters")
 
-		createTime, err := ptypes.TimestampProto(time.Now().UTC())
-		if err != nil {
-			log.WithError(err).Fatal("Converting time")
-		}
-		jobMeta := &sigridr.Meta{
+		jobMeta := &types.Meta{
 			Name:           "Default",
 			Description:    "Default job",
 			CreatedBy:      "anonymous",
-			CreateTime:     createTime,
-			UpdateTime:     createTime,
+			Created:        now,
+			LastModified:   now,
 			LastModifiedBy: "anonymous",
 		}
 		job := &types.Job{
@@ -81,45 +77,6 @@ var dbCmd = &cobra.Command{
 			Meta:           jobMeta,
 		}
 		db.Insert("jobs", job)
-
-		entityMeta := &sigridr.Meta{
-			Name:           "Nasjonalbiblioteket",
-			Description:    "Nasjonalbiblioteket",
-			CreatedBy:      "anonymous",
-			CreateTime:     createTime,
-			UpdateTime:     createTime,
-			LastModifiedBy: "anonymous",
-		}
-		entity := &sigridr.Entity{
-			Id:   uuid.New().String(),
-			Meta: entityMeta,
-		}
-		db.Insert("entities", entity)
-
-		seedMeta := &sigridr.Meta{
-			Name:           "from:oslopolitiops",
-			Description:    "Nasjonalbiblioteket",
-			CreatedBy:      "anonymous",
-			CreateTime:     createTime,
-			UpdateTime:     createTime,
-			LastModifiedBy: "anonymous",
-		}
-		seed := &sigridr.Seed{
-			Id:       uuid.New().String(),
-			Meta:     seedMeta,
-			EntityId: entity.Id,
-			JobId:    []string{job.Id},
-		}
-		db.Insert("seeds", seed)
-
-		/*
-		queuedSeed := &sigridr.QueuedSeed{
-			Parameters: &sigridr.SearchParameters{
-				Query: "from:oslopolitiops",
-			},
-			SeedId: seed.Id,
-		}*/
-		// db.Insert("seed_queue", queuedSeed)
 	},
 }
 
