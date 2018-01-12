@@ -20,7 +20,7 @@ func init() {
 }
 
 func main() {
-	scheduler := cron.NewScheduler().Location(time.UTC).Interval(time.Nanosecond)
+	scheduler := cron.NewScheduler().Location(time.UTC).Interval(time.Minute)
 
 	scheduler.AddCollector(new(dbCollector))
 
