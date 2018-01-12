@@ -49,22 +49,13 @@ func (s *worker) Do(context context.Context, work *pb.WorkRequest) (*pb.WorkRepl
 	if err == nil {
 		params.MaxID = maxId
 	}
-	/*
+
 	sinceId, err := strconv.ParseInt(queuedSeed.Parameters.SinceId, 10, 64)
 	if err == nil {
 		params.SinceID = sinceId
 	}
-	*/
 
 	now := time.Now().UTC()
-
-	log.WithFields(log.Fields{
-		"query":   params.Query,
-		"ref":     queuedSeed.GetRef(),
-		"seq":     queuedSeed.GetSeq(),
-		"maxId":   queuedSeed.GetParameters().GetMaxId(),
-		"sinceId": queuedSeed.GetParameters().GetSinceId(),
-	}).Infoln("presearch")
 
 	result, response, err := twitterClient().Search(params)
 	if err != nil {
@@ -72,6 +63,11 @@ func (s *worker) Do(context context.Context, work *pb.WorkRequest) (*pb.WorkRepl
 		return nil, err
 	} else {
 		log.WithFields(log.Fields{
+			"query":   params.Query,
+			"ref":     queuedSeed.GetRef(),
+			"seq":     queuedSeed.GetSeq(),
+			"maxId":   queuedSeed.GetParameters().GetMaxId(),
+			"sinceId": queuedSeed.GetParameters().GetSinceId(),
 			"tweets": len(result.Statuses),
 		}).Infoln("search")
 	}
@@ -109,7 +105,7 @@ func (s *worker) Do(context context.Context, work *pb.WorkRequest) (*pb.WorkRepl
 		"maxId":   queuedSeed.Parameters.MaxId,
 		"sinceId": queuedSeed.Parameters.SinceId,
 		"ref":     queuedSeed.GetRef(),
-	}).Infoln("postsearch")
+	}).Debugln("postsearch")
 
 	return &pb.WorkReply{
 		QueuedSeed: queuedSeed,
