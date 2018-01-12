@@ -16,8 +16,6 @@ func GetJobs() []types.Job {
 	if err != nil {
 		log.WithError(err).Error("Getting jobs from database")
 		return make([]types.Job, 0)
-	} else {
-		log.WithField("jobs", jobs).Debugln("Got jobs from database")
 	}
 
 	// Add tasks to job
@@ -35,7 +33,7 @@ func GetSeeds(job *types.Job) []types.Seed {
 	defer Disconnect()
 
 	cursor, err := r.Table("seeds").Filter(func(seed r.Term) r.Term {
-		return seed.Field("job_id").Contains(job.Id)
+		return seed.Field("jobId").Contains(job.Id)
 	}).Run(session)
 	if err != nil {
 		log.WithError(err).Errorln("Getting seeds with jobId from database")
@@ -44,8 +42,6 @@ func GetSeeds(job *types.Job) []types.Seed {
 	err = cursor.All(&seeds)
 	if err != nil {
 		log.WithError(err).Errorln("Getting seeds with jobId from database")
-	} else {
-		log.WithField("seeds", seeds).Debugln("Got seeds from database")
 	}
 	return seeds
 }
