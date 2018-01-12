@@ -33,6 +33,7 @@ func GetNextToFetch(ctx context.Context) <-chan *sigridr.QueuedSeed {
 		defer cursor.Close()
 		if err != nil {
 			log.WithError(err).Errorln("getting cursor to seed_queue")
+			out <- nil;
 			return
 		}
 
