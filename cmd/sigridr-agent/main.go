@@ -36,11 +36,11 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	wg.Add(1)
-	go queueWorker(ctx, &wg)
-
 	var opts []grpc.ServerOption
 	server := grpc.NewServer(opts...)
+
+	new(agent).register(server)
+
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
@@ -49,7 +49,8 @@ func main() {
 		log.WithField("port", port).Debugln("Listening")
 	}
 
-	new(agent).register(server)
+	wg.Add(1)
+	go queueWorker(ctx, &wg)
 
 	server.Serve(listener)
 
