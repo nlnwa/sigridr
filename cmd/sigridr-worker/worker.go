@@ -44,12 +44,10 @@ func (s *worker) Do(context context.Context, work *pb.WorkRequest) (*pb.WorkRepl
 		Count:      100,
 		Query:      queuedSeed.Parameters.Query,
 	}
-
 	maxId, err := strconv.ParseInt(queuedSeed.Parameters.MaxId, 10, 64)
 	if err == nil {
 		params.MaxID = maxId
 	}
-
 	sinceId, err := strconv.ParseInt(queuedSeed.Parameters.SinceId, 10, 64)
 	if err == nil {
 		params.SinceID = sinceId
@@ -68,7 +66,7 @@ func (s *worker) Do(context context.Context, work *pb.WorkRequest) (*pb.WorkRepl
 			"seq":     queuedSeed.GetSeq(),
 			"maxId":   queuedSeed.GetParameters().GetMaxId(),
 			"sinceId": queuedSeed.GetParameters().GetSinceId(),
-			"tweets": len(result.Statuses),
+			"tweets":  len(result.Statuses),
 		}).Infoln("search")
 	}
 
@@ -84,8 +82,8 @@ func (s *worker) Do(context context.Context, work *pb.WorkRequest) (*pb.WorkRepl
 	if err != nil {
 		return nil, err
 	}
-	// reference the first document id of a sequence
-	if queuedSeed.GetRef() == "" {
+
+	if queuedSeed.GetSeq() == 0 {
 		queuedSeed.Ref = id
 	}
 
@@ -93,23 +91,16 @@ func (s *worker) Do(context context.Context, work *pb.WorkRequest) (*pb.WorkRepl
 	if err != nil {
 		return nil, err
 	}
-	queuedSeed.Parameters.MaxId = maxIdStr
-
 	sinceIdStr, err := twitter.SinceId(search.Metadata)
 	if err != nil {
 		return nil, err
 	}
-	queuedSeed.Parameters.SinceId = sinceIdStr
-
-	log.WithFields(log.Fields{
-		"maxId":   queuedSeed.Parameters.MaxId,
-		"sinceId": queuedSeed.Parameters.SinceId,
-		"ref":     queuedSeed.GetRef(),
-	}).Debugln("postsearch")
 
 	return &pb.WorkReply{
 		QueuedSeed: queuedSeed,
 		Count:      int32(len(result.Statuses)),
+		MaxId:      maxIdStr,
+		SinceId:    sinceIdStr,
 		RateLimit:  ratelimit.New().FromHttpHeaders(response.Header).ToProto(),
 	}, nil
 
