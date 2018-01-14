@@ -92,7 +92,7 @@ func dispatch(ctx context.Context, queuedSeed *pb.QueuedSeed) (*ratelimit.RateLi
 		return nil, err
 	}
 
-	if reply.QueuedSeed.Parameters.GetSeq() == 0 {
+	if reply.QueuedSeed.GetSeq() == 0 {
 		reply.QueuedSeed.Parameters.Id = queuedSeed.GetSeedId()
 	}
 
