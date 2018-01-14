@@ -33,7 +33,7 @@ func GetNextToFetch(ctx context.Context) <-chan *sigridr.QueuedSeed {
 		defer cursor.Close()
 		if err != nil {
 			log.WithError(err).Errorln("getting cursor to seed_queue")
-			out <- nil;
+			out <- nil
 			return
 		}
 
@@ -48,6 +48,7 @@ func GetNextToFetch(ctx context.Context) <-chan *sigridr.QueuedSeed {
 				}
 			}
 
+			// return if done else send next to fetch on channel
 			select {
 			case <-ctx.Done():
 				return
