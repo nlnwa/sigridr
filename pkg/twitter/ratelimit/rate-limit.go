@@ -26,7 +26,10 @@ import (
 	pb "github.com/nlnwa/sigridr/api/sigridr"
 )
 
-const HEADER_PREFIX = "X-Rate-Limit-"
+const (
+	MAX_STATUSES_PER_REQUEST = 100
+	headerPrefix             = "X-Rate-Limit-"
+)
 
 var (
 	mutex sync.Mutex // guard rateLimit against concurrent access
@@ -73,12 +76,12 @@ func (rl *RateLimit) WithReset(reset time.Time) *RateLimit {
 // NewRateLimit creates an instance of RateLimit based on HTTP Headers
 func (rl *RateLimit) FromHttpHeaders(header map[string][]string) *RateLimit {
 	for key, value := range header {
-		if strings.HasPrefix(key, HEADER_PREFIX) {
+		if strings.HasPrefix(key, headerPrefix) {
 			n, err := strconv.ParseInt(value[0], 10, 64)
 			if err != nil {
 				log.Println(err)
 			}
-			switch strings.TrimPrefix(key, HEADER_PREFIX) {
+			switch strings.TrimPrefix(key, headerPrefix) {
 			case "Reset":
 				rl.Reset = time.Unix(n, 0).UTC()
 			case "Limit":
