@@ -47,7 +47,7 @@ func ConnectWithOptions(opts Options) {
 	// https://godoc.org/github.com/GoRethink/gorethink#ConnectOpts
 	session, err = r.Connect(opts)
 	if err != nil {
-		log.WithError(err).Fatal("Connecting to db")
+		log.WithError(err).Fatal("Connecting to database")
 	} else {
 		log.WithField("connected", session.IsConnected()).Debugln("Database session")
 	}
@@ -126,12 +126,12 @@ func Insert(table string, document interface{}) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	id  := ""
+	id := ""
 	if len(res.GeneratedKeys) > 0 {
 		id = res.GeneratedKeys[0]
 	}
 	log.WithFields(log.Fields{
-		"id": id,
+		"id":    id,
 		"table": table,
 	}).Debugln("Database insert document")
 	return id, nil
@@ -141,7 +141,7 @@ func Delete(table string, id string) error {
 	_, err := r.Table(table).Get(id).Delete().Run(session)
 	if err == nil {
 		log.WithFields(log.Fields{
-			"id": id,
+			"id":    id,
 			"table": table,
 		}).Debugln("Database delete document")
 	}
@@ -162,7 +162,6 @@ func Get(table string, id string, value interface{}) error {
 		return err
 	}
 	cursor.One(value)
-	cursor.Close()
 	return nil
 }
 
@@ -190,6 +189,5 @@ func FetchOne(name string, value interface{}) error {
 		return err
 	}
 	cursor.One(value)
-	cursor.Close()
 	return nil
 }
