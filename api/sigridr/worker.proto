@@ -16,6 +16,8 @@ message WorkRequest {
 
 message WorkReply {
     QueuedSeed queued_seed = 1;
-    int32 Count = 2;
-    RateLimit rate_limit = 3;
+    int32 count = 2;
+    string max_id = 3;
+    string since_id = 4;
+    RateLimit rate_limit = 15;
 }
