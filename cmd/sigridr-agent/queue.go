@@ -15,68 +15,48 @@ import (
 )
 
 var (
-	conn      *grpc.ClientConn
-	client    pb.WorkerClient
-	rateLimit *ratelimit.RateLimit
+	conn   *grpc.ClientConn
+	client pb.WorkerClient
 )
 
 func queueWorker(ctx context.Context, wg *sync.WaitGroup) {
-	needSleep := false
-	enqueued := false
-	timeout := time.Duration(0)
-	timer := time.NewTimer(timeout)
-	rateLimit = ratelimit.New()
+	timer := time.NewTimer(0)
 
 	defer func() {
-		if !timer.Stop() {
-			<-timer.C // drain timer channel
-		}
+		timer.Stop()
 		wg.Done()
 	}()
 
 	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			if rateLimit.Remaining < 1 {
-				timeout = rateLimit.Timeout() + 5 * time.Second
-			} else if enqueued {
-				// queuedSeed was enqueued last dispatch
-				timeout = 0
-			} else if needSleep {
-				// seed queue empty or dispatch error
-				timeout = time.Minute
-			}
-			log.WithField("timeout", timeout).Debugln("sleeping")
-			timer.Reset(timeout)
-		}
-
+		// wait for timer or return if done
 		select {
 		case <-timer.C:
 			err := connect()
 			if err != nil {
 				log.WithError(err).Errorln("failed to connect, will sleep and try again later")
-				needSleep = true // try to sleep the connection error away
+				timer.Reset(time.Minute)
 				break
 			}
 			for queuedSeed := range db.GetNextToFetch(ctx) {
 				if queuedSeed == nil {
-					needSleep = true
+					timer.Reset(time.Minute)
 					break
 				}
-				enqueued, err = dispatch(ctx, queuedSeed)
+				rateLimit, err := dispatch(ctx, queuedSeed)
 				if err != nil {
-					log.WithError(err).Errorln("dispatch")
-					needSleep = true
+					log.WithError(err).Errorln("dispatching queued seed")
+					timer.Reset(time.Minute)
 					break
 				}
 				log.WithFields(log.Fields{
 					"remaining": rateLimit.Remaining,
-					"reset": rateLimit.Reset,
-					"timeout": rateLimit.Timeout(),
-					}).Debugln("Ratelimit")
+					"reset":     rateLimit.Reset,
+					"timeout":   rateLimit.Timeout(),
+				}).Debugln("Ratelimit")
+
+				// stop fetching if ratelimit
 				if rateLimit.Remaining < 1 {
+					timer.Reset(rateLimit.Timeout() + 5*time.Second)
 					break
 				}
 			}
@@ -88,45 +68,46 @@ func queueWorker(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // dispatch sends work to the client
-func dispatch(ctx context.Context, queuedSeed *pb.QueuedSeed) (bool, error) {
-	if queuedSeed.Parameters.GetMaxId() == "" {
+func dispatch(ctx context.Context, queuedSeed *pb.QueuedSeed) (*ratelimit.RateLimit, error) {
+	if queuedSeed.GetSeq() == 0 {
 		params, err := db.SearchParameters(queuedSeed.GetSeedId())
 		if err != nil {
-			return false, err
+			return nil, err
 		}
-		queuedSeed.Parameters.MaxId = params.GetMaxId()
 		queuedSeed.Parameters.SinceId = params.GetSinceId()
 	}
-
-	log.WithField("parameters", queuedSeed.Parameters).Debugln("dispatch")
 	work := &pb.WorkRequest{QueuedSeed: queuedSeed}
 
 	ctx, cancel := netcontext.WithTimeout(ctx, time.Minute)
 	defer cancel()
+
 	reply, err := client.Do(ctx, work)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
+	// remove seed from queue
 	err = db.DeleteQueuedSeed(queuedSeed.Id)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	rateLimit.FromProto(reply.RateLimit)
+	if reply.QueuedSeed.Parameters.GetSeq() == 0 {
+		reply.QueuedSeed.Parameters.Id = queuedSeed.GetSeedId()
+	}
 
-	reply.QueuedSeed.Parameters.Id = queuedSeed.GetSeedId()
-	db.SaveSearchParameters(reply.QueuedSeed.Parameters)
+	if reply.Count < ratelimit.MAX_STATUSES_PER_REQUEST {
+		reply.QueuedSeed.Parameters.MaxId = ""
+		reply.QueuedSeed.Parameters.SinceId = reply.GetSinceId()
+		db.SaveSearchParameters(reply.QueuedSeed.Parameters)
+	} else {
+		reply.QueuedSeed.Parameters.MaxId = reply.GetMaxId()
+		db.SaveSearchParameters(reply.QueuedSeed.Parameters)
 
-	// if count equals maximum per request (from twitter) enqueue new request to
-	// possibly fetch more
-	if reply.GetCount() >= 100 {
 		reply.QueuedSeed.Seq++
 		db.EnqueueSeed(reply.QueuedSeed)
-		return true, nil
-	} else {
-		return false, nil
 	}
+	return new(ratelimit.RateLimit).FromProto(reply.RateLimit), nil
 }
 
 // connect establishes a connection to gRPC server and creates a new client which use the connection.
