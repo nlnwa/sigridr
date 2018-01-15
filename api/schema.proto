@@ -43,7 +43,7 @@ message Seed {
     bool disabled = 15;
 }
 
-message SearchParameters {
+message Parameter {
     string id = 1; // seed id
     string query = 3;
     string max_id = 4;
@@ -55,7 +55,7 @@ message QueuedSeed {
     int32 seq = 2;
     string ref = 3;
     string seed_id = 4;
-    SearchParameters parameters = 5;    
+    Parameter parameter = 5;
 }
 
 message RateLimit {

@@ -17,7 +17,6 @@ package ratelimit
 import (
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"

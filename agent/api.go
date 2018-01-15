@@ -1,56 +1,58 @@
 package agent
 
 import (
-	google_protobuf "github.com/golang/protobuf/ptypes/empty"
+	"fmt"
 
+	pb "github.com/golang/protobuf/ptypes/empty"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 
 	"github.com/nlnwa/sigridr/api"
-	"github.com/nlnwa/sigridr/pkg/db"
-	"github.com/nlnwa/sigridr/pkg/types"
+	"github.com/nlnwa/sigridr/database"
+	"github.com/nlnwa/sigridr/types"
+
 )
 
 type agentApi struct {
-	store *db.Database
+	store *database.Rethink
 }
 
 func NewApi() api.AgentServer {
-	return &agentApi{db.New()}
+	return &agentApi{database.New()}
 }
 
 // Implements AgentClient gRPC interface
-func (a *agentApi) Do(ctx context.Context, req *api.DoJobRequest) (*google_protobuf.Empty, error) {
+func (a *agentApi) Do(ctx context.Context, req *api.DoJobRequest) (*pb.Empty, error) {
 	seed := new(types.Seed).FromProto(req.Seed)
 
 	if seed.Meta.Name == "" {
 		log.WithField("description", seed.Meta.Description).Debugln("Not enqueuing seed (no query)")
-		return new(google_protobuf.Empty), nil
+		return new(pb.Empty), nil
 	}
 
 	log.WithField("description", seed.Meta.Description).Debugln("Enqueueing seed")
 
 	queuedSeed := &api.QueuedSeed{
 		SeedId:     seed.Id,
-		Parameters: &api.SearchParameters{Query: seed.Meta.Name},
+		Parameter: &api.Parameter{Query: seed.Meta.Name},
 	}
 	err := a.enqueueSeed(queuedSeed)
 	if err != nil {
-		log.WithError(err).Errorln()
-		return nil, err
+		return nil, fmt.Errorf("failed enqueuing seed: %v", err)
 	}
 
-	return new(google_protobuf.Empty), nil
+	return new(pb.Empty), nil
 }
 
+
 func (a *agentApi) enqueueSeed(queuedSeed *api.QueuedSeed) error {
-	err := a.store.Connect()
+	err := a.store.Connect(database.DefaultOptions())
 	defer a.store.Disconnect()
 	if err != nil {
 		return err
 	}
-
-	_, err = a.store.Insert("seed_queue", queuedSeed)
+	_, err = a.store.Insert("queue", queuedSeed)
 	return err
 }
+
+

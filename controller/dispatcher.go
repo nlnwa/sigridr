@@ -1,38 +1,62 @@
 package controller
 
 import (
+	"fmt"
 	"context"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/nlnwa/sigridr/api"
 	"github.com/nlnwa/sigridr/types"
+
 )
 
-func dispatch(job *types.Job, seed *types.Seed) {
+type agentClient struct {
+	address string
+	cc *grpc.ClientConn
+}
+
+func (ac *agentClient) dial() (api.AgentClient, error) {
+	var err error
+	ac.cc, err = grpc.Dial(ac.address, grpc.WithInsecure())
+	if err != nil {
+		return nil, fmt.Errorf("dial: %v", err)
+	}
+	return api.NewAgentClient(ac.cc), nil
+}
+
+func (ac *agentClient) hangup() error {
+	return ac.cc.Close()
+}
+
+type dispatcher struct {
+	client *agentClient
+}
+
+func newDispatcher(c Config) *dispatcher {
+	return &dispatcher{&agentClient{address: c.Agent}}
+}
+
+func (d *dispatcher) dispatch(job *types.Job, seed *types.Seed) {
 	request := api.DoJobRequest{
 		Job:  job.ToProto(),
 		Seed: seed.ToProto(),
 	}
-
-	opts := grpc.WithInsecure()
-	conn, err := grpc.Dial(address, opts)
-	if err != nil {
-		log.WithError(err).Error()
-	}
-	defer conn.Close()
-
-	agent := api.NewAgentClient(conn)
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
+	client, err := d.client.dial()
+	if err != nil {
+		log.WithError(err).Errorln()
+	}
+	defer d.client.hangup()
 
-	_, err = agent.Do(ctx, &request)
+	_, err = client.Do(ctx, &request)
 	if err != nil {
 		log.WithError(err).Error()
 	} else {
-		log.WithField("seed", seed.Meta.Description).Infoln("Dispatch")
+		log.WithField("seed", seed.Meta.Description).Debugln("Dispatch")
 	}
 }
+

@@ -1,26 +1,51 @@
-package main
+package agent
 
 import (
 	"context"
-	"sync"
 	"time"
+	"fmt"
 
 	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 
 	"github.com/nlnwa/sigridr/api"
-	"github.com/nlnwa/sigridr/pkg/twitter/ratelimit"
+	"github.com/nlnwa/sigridr/twitter"
+	"github.com/nlnwa/sigridr/twitter/ratelimit"
+
+	"google.golang.org/grpc"
 )
 
 var (
-	conn       *grpc.ClientConn
-	client     pb.WorkerClient
-	queueStore *store.QueueStore
+	worker *workerClient
+	client api.WorkerClient
+	db     *queueStore
 )
 
-func Worker(ctx context.Context, c Config) error {
+type Config struct {
+	Worker string
+}
+
+type workerClient struct {
+	address string
+	cc      *grpc.ClientConn
+}
+
+func (wc *workerClient) dial() (api.WorkerClient, error) {
+	conn, err := grpc.Dial(wc.address, grpc.WithInsecure())
+	if err != nil {
+		return nil, fmt.Errorf("dial: %v", err)
+	}
+	wc.cc = conn
+	return api.NewWorkerClient(conn), nil
+}
+
+func (wc *workerClient) hangup() error {
+	return wc.cc.Close()
+}
+
+func QueueWorker(ctx context.Context, c Config) error {
 	timer := time.NewTimer(0)
-	queueStore = store.New()
+	db = newStore()
+	worker = &workerClient{address: c.Worker}
 
 	defer timer.Stop()
 
@@ -28,18 +53,18 @@ func Worker(ctx context.Context, c Config) error {
 		// wait for timer or return if done
 		select {
 		case <-timer.C:
-			err := queueStore.Connect()
+			err := db.connect()
 			if err != nil {
 				timer.Reset(time.Minute)
 				break
 			}
-			err := connect(c)
+			client, err = worker.dial()
 			if err != nil {
 				log.WithError(err).Errorln("failed to connect, will sleep and try again later")
 				timer.Reset(time.Minute)
 				break
 			}
-			for queuedSeed := range queueStore.GetNextToFetch(ctx) {
+			for queuedSeed := range db.getNextToFetch(ctx) {
 				if queuedSeed == nil {
 					timer.Reset(time.Minute)
 					break
@@ -62,7 +87,8 @@ func Worker(ctx context.Context, c Config) error {
 					break
 				}
 			}
-			disconnect()
+			db.Disconnect()
+			worker.hangup()
 		case <-ctx.Done():
 			return nil
 		}
@@ -70,15 +96,15 @@ func Worker(ctx context.Context, c Config) error {
 }
 
 // dispatch sends work to the client
-func dispatch(ctx context.Context, queuedSeed *pb.QueuedSeed) (*ratelimit.RateLimit, error) {
-	if queuedSeed.GetSeq() == 0 {
-		params, err := queueStore.SearchParameters(queuedSeed.GetSeedId())
-		if err != nil {
-			return nil, err
-		}
-		queuedSeed.Parameters.SinceId = params.GetSinceId()
+func dispatch(ctx context.Context, queuedSeed *api.QueuedSeed) (*ratelimit.RateLimit, error) {
+	param, err := db.parameter(queuedSeed.GetSeedId())
+	if err != nil {
+		return nil, err
 	}
-	work := &pb.WorkRequest{QueuedSeed: queuedSeed}
+	if queuedSeed.GetSeq() == 0 && param.GetId() != "" {
+		queuedSeed.Parameter.SinceId = param.GetSinceId()
+	}
+	work := &api.WorkRequest{QueuedSeed: queuedSeed}
 
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
@@ -89,53 +115,36 @@ func dispatch(ctx context.Context, queuedSeed *pb.QueuedSeed) (*ratelimit.RateLi
 	}
 
 	// remove seed from queue
-	err = queueStore.DeleteQueuedSeed(queuedSeed.Id)
+	err = db.deleteQueuedSeed(queuedSeed.Id)
 	if err != nil {
 		return nil, err
 	}
 
+	// update queued seed parameters
+	if reply.Count < twitter.MAX_STATUSES_PER_REQUEST {
+		reply.QueuedSeed.Parameter.MaxId = ""
+		reply.QueuedSeed.Parameter.SinceId = reply.GetSinceId()
+	}
+
+	// only save/update parameter if first in sequence
 	if reply.QueuedSeed.GetSeq() == 0 {
-		reply.QueuedSeed.Parameters.Id = queuedSeed.GetSeedId()
+		reply.QueuedSeed.Parameter.Id = queuedSeed.GetSeedId()
+		if param.GetId() == "" {
+			err = db.saveParameter(reply.QueuedSeed.Parameter)
+		} else {
+			err = db.updateParameter(reply.QueuedSeed.Parameter)
+		}
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if reply.Count < ratelimit.MAX_STATUSES_PER_REQUEST {
-		reply.QueuedSeed.Parameters.MaxId = ""
-		reply.QueuedSeed.Parameters.SinceId = reply.GetSinceId()
-	} else {
-		reply.QueuedSeed.Parameters.MaxId = reply.GetMaxId()
-
+	// enqueue next fetch of queued seed
+	if reply.Count >= twitter.MAX_STATUSES_PER_REQUEST {
+		reply.QueuedSeed.Parameter.MaxId = reply.GetMaxId()
 		reply.QueuedSeed.Seq++
-		queueStore.EnqueueSeed(reply.QueuedSeed)
-	}
-	err = queueStore.SaveSearchParameters(reply.QueuedSeed.Parameters)
-	if err != nil {
-		return nil, err
+		db.enqueueSeed(reply.QueuedSeed)
 	}
 
 	return new(ratelimit.RateLimit).FromProto(reply.RateLimit), nil
-}
-
-// connect establishes:
-// - a connection to gRPC server and creates a new client which use the connection.
-// - a database session
-func connect(c Config) error {
-	var err error
-	opts := grpc.WithInsecure()
-	conn, err = grpc.Dial(c.Worker, opts)
-	if err != nil {
-		return err
-	}
-	client = pb.NewWorkerClient(conn)
-
-	err = queueStore.Connect()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// disconnect closes the connection to the gRPC server and the database session
-func disconnect() {
-	queueStore.Disconnect()
-	conn.Close()
 }

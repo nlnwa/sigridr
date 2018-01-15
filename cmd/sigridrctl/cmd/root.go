@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"context"
 	"strings"
 
 	"github.com/mitchellh/go-homedir"
@@ -24,8 +23,8 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
 
-	"github.com/nlnwa/sigridr/cmd/sigridrctl"
-	"github.com/nlnwa/sigridr/pkg/twitter/auth"
+	"github.com/nlnwa/igri/cmd/sigridrctl/config"
+	"github.com/nlnwa/sigridr/twitter"
 )
 
 var (
@@ -57,13 +56,13 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.sigridr.yaml)")
-
+	RootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "$HOME/.sigridr.yaml", "Config file")
 	RootCmd.PersistentFlags().StringVarP(&consumerSecret, "consumer-secret", "s", "", "Consumer secret")
 	RootCmd.PersistentFlags().StringVarP(&consumerKey, "consumer-key", "k", "", "Consumer key")
 	RootCmd.PersistentFlags().StringVarP(&accessToken, "access-token", "a", "", "Access token")
-	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "", false, "Turn on debugging")
+	RootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Turn on debugging")
 
+	viper.BindPFlag("config", RootCmd.PersistentFlags().Lookup("config"))
 	viper.BindPFlag("consumer-secret", RootCmd.PersistentFlags().Lookup("consumer-secret"))
 	viper.BindPFlag("consumer-key", RootCmd.PersistentFlags().Lookup("consumer-key"))
 	viper.BindPFlag("access-token", RootCmd.PersistentFlags().Lookup("access-token"))
@@ -112,12 +111,12 @@ func initConfig() {
 			log.WithError(err).Fatal()
 		}
 		viper.Set("token", token)
-		sigridrctl.WriteConfig()
+		config.Write()
 	}
 
 	// If access token provided, use it and store it in config file
 	if accessToken := viper.Get("access-token"); accessToken != "" {
 		viper.Set("token", &oauth2.Token{AccessToken: accessToken.(string)})
-		sigridrctl.WriteConfig()
+		config.Write()
 	}
 }

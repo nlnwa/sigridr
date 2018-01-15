@@ -22,9 +22,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/nlnwa/sigridr/pkg/twitter"
-	"github.com/nlnwa/sigridr/pkg/twitter/auth"
-	"github.com/nlnwa/sigridr/pkg/twitter/ratelimit"
+	"github.com/nlnwa/sigridr/twitter"
+	"github.com/nlnwa/sigridr/auth"
+	"github.com/nlnwa/sigridr/twitter/ratelimit"
 )
 
 var (
@@ -48,7 +48,7 @@ var searchCmd = &cobra.Command{
 
 		// Get authorized httpClient and set timeout
 		httpClient := auth.HttpClient(viper.Get("token"))
-		httpClient.Timeout = 10 * time.Seconds()
+		httpClient.Timeout = 10 * time.Second
 
 		// Get twitter client
 		client := twitter.New(httpClient)

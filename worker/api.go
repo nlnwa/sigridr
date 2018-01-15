@@ -7,14 +7,16 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"google.golang.org/grpc"
-
 	"github.com/nlnwa/sigridr/api"
 	"github.com/nlnwa/sigridr/auth"
 	"github.com/nlnwa/sigridr/database"
 	"github.com/nlnwa/sigridr/twitter"
 	"github.com/nlnwa/sigridr/twitter/ratelimit"
 )
+
+type Config struct {
+	AccessToken string
+}
 
 // result storage format
 type SearchResult struct {
@@ -28,15 +30,15 @@ type SearchResult struct {
 }
 
 type worker struct {
-	store  *db.Database
+	store  *database.Rethink
 	client *twitter.Client
 }
 
 func NewApi(c Config) api.WorkerServer {
 	httpClient := auth.HttpClient(c.AccessToken)
-	httpClient.Timeout = 10 * time.Seconds()
+	httpClient.Timeout = 10 * time.Second
 
-	return &worker{db.New(), twitter.New(httpClient)}
+	return &worker{database.New(), twitter.New(httpClient)}
 }
 
 func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkReply, error) {
@@ -46,13 +48,13 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 		ResultType: "recent",
 		TweetMode:  "extended",
 		Count:      100,
-		Query:      queuedSeed.Parameters.Query,
+		Query:      queuedSeed.Parameter.Query,
 	}
-	maxId, err := strconv.ParseInt(queuedSeed.Parameters.MaxId, 10, 64)
+	maxId, err := strconv.ParseInt(queuedSeed.Parameter.MaxId, 10, 64)
 	if err == nil {
 		params.MaxID = maxId
 	}
-	sinceId, err := strconv.ParseInt(queuedSeed.Parameters.SinceId, 10, 64)
+	sinceId, err := strconv.ParseInt(queuedSeed.Parameter.SinceId, 10, 64)
 	if err == nil {
 		params.SinceID = sinceId
 	}
@@ -68,8 +70,8 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 			"query":   params.Query,
 			"ref":     queuedSeed.GetRef(),
 			"seq":     queuedSeed.GetSeq(),
-			"maxId":   queuedSeed.GetParameters().GetMaxId(),
-			"sinceId": queuedSeed.GetParameters().GetSinceId(),
+			"maxId":   queuedSeed.GetParameter().GetMaxId(),
+			"sinceId": queuedSeed.GetParameter().GetSinceId(),
 			"tweets":  len(result.Statuses),
 		}).Infoln("search")
 	}
@@ -82,8 +84,9 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 		Statuses:   &result.Statuses,
 		Response:   response,
 	}
-	id, err := w.store.saveSearchResult(search)
+	id, err := w.saveSearchResult(search)
 	if err != nil {
+		log.WithError(err).Errorln("saving search result")
 		return nil, err
 	}
 
@@ -111,10 +114,10 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 }
 
 func (w *worker) saveSearchResult(value interface{}) (string, error) {
-	err := w.store.Connect()
+	err := w.store.Connect(database.DefaultOptions())
 	defer w.store.Disconnect()
 	if err != nil {
 		return "", err
 	}
-	return w.Insert("results", value)
+	return w.store.Insert("result", value)
 }

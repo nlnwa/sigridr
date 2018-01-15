@@ -35,23 +35,23 @@ func init() {
 func (db *Rethink) Connect(opts ConnectOpts) error {
 	var err error
 	db.session, err = r.Connect(opts)
-	Return err
+	return err
 }
 
 func (db *Rethink) Disconnect() {
 	db.session.Close()
 }
 
-func (db *Rethink) DropRethink(name string) error {
-	result, err := r.DBDrop(name).RunWrite(db.session)
+func (db *Rethink) DropDatabase(name string) error {
+	_, err := r.DBDrop(name).RunWrite(db.session)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (db *Rethink) CreateRethink(name string) error {
-	result, err := r.DBCreate(name).RunWrite(db.session)
+func (db *Rethink) CreateDatabase(name string) error {
+	_, err := r.DBCreate(name).RunWrite(db.session)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (db *Rethink) CreateRethink(name string) error {
 }
 
 func (db *Rethink) DropTable(name string) error {
-	result, err := r.TableDrop(name).RunWrite(db.session)
+	_, err := r.TableDrop(name).RunWrite(db.session)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (db *Rethink) DropTable(name string) error {
 }
 
 func (db *Rethink) CreateTable(name string) error {
-	result, err := r.TableCreate(name).RunWrite(db.session)
+	_, err := r.TableCreate(name).RunWrite(db.session)
 	if err != nil {
 		return err
 	}
@@ -86,6 +86,14 @@ func (db *Rethink) Insert(table string, document interface{}) (string, error) {
 	return id, nil
 }
 
+func (db *Rethink) Update(table string, id string, value interface{}) error {
+	_, err := r.Table(table).Get(id).Update(value).RunWrite(db.session)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (db *Rethink) Delete(table string, id string) error {
 	_, err := r.Table(table).Get(id).Delete().Run(db.session)
 	return err
@@ -101,6 +109,15 @@ func (db *Rethink) Filter(table string, filterFunc interface{}) (*r.Cursor, erro
 
 func (db *Rethink) Get(table string, id string, value interface{}) error {
 	cursor, err := r.Table(table).Get(id).Run(db.session)
+	if err != nil {
+		return err
+	}
+	cursor.One(value)
+	return nil
+}
+
+func (db *Rethink) FetchOne(table string, value interface{}) error {
+	cursor, err := r.Table(table).Run(db.session)
 	if err != nil {
 		return err
 	}

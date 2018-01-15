@@ -1,64 +1,74 @@
-package store
+package agent
 
 import (
 	"context"
 
 	log "github.com/sirupsen/logrus"
 
-	pb "github.com/nlnwa/sigridr/api/sigridr"
-	"github.com/nlnwa/sigridr/pkg/db"
-	// "github.com/nlnwa/sigridr/pkg/types"
+	"github.com/nlnwa/sigridr/api"
+	"github.com/nlnwa/sigridr/database"
 )
 
-type QueueStore struct {
-	*db.Database
+type queueStore struct {
+	*database.Rethink
 }
 
-func New() *QueueStore {
-	return &QueueStore{db.New()}
+func newStore() *queueStore {
+	return &queueStore{database.New()}
 }
 
-func (qs *QueueStore) EnqueueSeed(queuedSeed *pb.QueuedSeed) error {
-	_, err := qs.Insert("seed_queue", queuedSeed)
+func (qs *queueStore) connect() error {
+	return qs.Rethink.Connect(database.DefaultOptions())
+}
+
+func (qs *queueStore) enqueueSeed(queuedSeed *api.QueuedSeed) error {
+	_, err := qs.Insert("queue", queuedSeed)
 	return err
 }
 
-func (qs *QueueStore) SaveSearchParameters(params *pb.SearchParameters) error {
-	_, err := qs.Insert("search_parameters", params)
+func (qs *queueStore) updateParameter(param *api.Parameter) error {
+	return qs.Update("parameter", param.Id, param)
+}
+
+func (qs *queueStore) saveParameter(param *api.Parameter) error {
+	_, err := qs.Insert("parameter", param)
 	return err
 }
 
-func (qs *QueueStore) SearchParameters(id string) (*pb.SearchParameters, error) {
-	var params *pb.SearchParameters
-	err := qs.Get("search_parameters", id, params)
-	return params, err
+
+func (qs *queueStore) parameter(id string) (*api.Parameter, error) {
+	param := new(api.Parameter)
+	err := qs.Get("parameter", id, param)
+	if err != nil {
+		return nil, err
+	}
+	return param, nil
 }
 
-func (qs *QueueStore) DeleteQueuedSeed(id string) error {
-	return qs.Delete("seed_queue", id)
+
+func (qs *queueStore) deleteQueuedSeed(id string) error {
+	return qs.Delete("queue", id)
 }
 
-func (qs *QueueStore) GetNextToFetch(ctx context.Context) <-chan *pb.QueuedSeed {
-	out := make(chan *pb.QueuedSeed)
+func (qs *queueStore) getNextToFetch(ctx context.Context) <-chan *api.QueuedSeed {
+	out := make(chan *api.QueuedSeed)
 	go func() {
 		defer close(out)
 
-		cursor, err := qs.GetCursor("seed_queue")
+		cursor, err := qs.GetCursor("queue")
 		defer cursor.Close()
 		if err != nil {
-			log.WithError(err).Errorln("getting cursor to seed_queue")
+			log.WithError(err).Errorln("failed getting cursor to seed queue")
 			out <- nil
 			return
 		}
-		queuedSeed := new(pb.QueuedSeed)
 		for {
+			queuedSeed := new(api.QueuedSeed)
 			if ok := cursor.Next(queuedSeed); !ok {
 				if err = cursor.Err(); err != nil {
-					log.WithError(err).Errorln("failed getting next row in seed_queue")
-					return
-				} else {
-					queuedSeed = nil
+					log.WithError(err).Errorln("failed getting next row in seed queue")
 				}
+				queuedSeed = nil
 			}
 
 			// return if done else send next to fetch on channel

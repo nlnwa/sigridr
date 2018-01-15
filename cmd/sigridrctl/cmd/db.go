@@ -22,13 +22,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/nlnwa/sigridr/pkg/database"
-	"github.com/nlnwa/sigridr/pkg/types"
+	"github.com/nlnwa/sigridr/database"
+	"github.com/nlnwa/sigridr/types"
 )
 
 var (
 	databaseAddress string
-	db              *database.Db
+	db              *database.Rethink
 )
 
 // dbCmd represents the db command
@@ -40,7 +40,7 @@ var dbCmd = &cobra.Command{
 		log.SetLevel(log.DebugLevel)
 		db = database.New()
 		opts := database.ConnectOpts{Database: "sigridr", Address: viper.GetString("database-address")}
-		db.ConnectWithOptions(opts)
+		db.Connect(opts)
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		db.Disconnect()
@@ -48,14 +48,14 @@ var dbCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		now := time.Now().UTC()
 
-		db.DropDb("sigridr")
-		db.CreateDb("sigridr")
-		db.CreateTable("results")
-		db.CreateTable("jobs")
-		db.CreateTable("entities")
-		db.CreateTable("seeds")
-		db.CreateTable("seed_queue")
-		db.CreateTable("search_parameters")
+		db.DropDatabase("sigridr")
+		db.CreateDatabase("sigridr")
+		db.CreateTable("result")
+		db.CreateTable("job")
+		db.CreateTable("entity")
+		db.CreateTable("seed")
+		db.CreateTable("queue")
+		db.CreateTable("parameter")
 
 		jobMeta := &types.Meta{
 			Name:           "Default",
@@ -72,7 +72,7 @@ var dbCmd = &cobra.Command{
 			ValidTo:        time.Date(2018, 12, 22, 14, 3, 0, 0, time.Now().Location()),
 			Meta:           jobMeta,
 		}
-		db.Insert("jobs", job)
+		db.Insert("job", job)
 	},
 }
 

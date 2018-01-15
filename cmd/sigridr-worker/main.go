@@ -9,6 +9,9 @@ import (
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+
+	"github.com/nlnwa/sigridr/worker"
+	"github.com/nlnwa/sigridr/api"
 )
 
 var (
@@ -39,20 +42,15 @@ func main() {
 
 	var grpcOpts []grpc.ServerOption
 
-	errc := make(chan error)
-	go func() {
-		errc <- func() error {
-			listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-			if err != nil {
-				log.WithError(err).Errorf("listening on %s failed", port)
-				return err
-			}
-			server := grpc.NewServer(grpcOpts...)
-			api.RegisterWorkerServer(server, worker.NewApi(c))
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		log.WithError(err).Errorf("listening on %s failed", port)
+		return
+	} else {
+		log.WithField("port", port).Infoln("Worker API server listening")
+	}
+	server := grpc.NewServer(grpcOpts...)
+	api.RegisterWorkerServer(server, worker.NewApi(c))
 
-			return server.Serve(listener)
-		}()
-	}()
-
-	return <-errc
+	server.Serve(listener)
 }

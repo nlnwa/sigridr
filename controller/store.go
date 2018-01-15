@@ -1,25 +1,29 @@
-package store
+package controller
 
 import (
 	log "github.com/sirupsen/logrus"
 	r "gopkg.in/gorethink/gorethink.v3"
 
-	"github.com/nlnwa/sigridr/pkg/db"
-	"github.com/nlnwa/sigridr/pkg/types"
+	"github.com/nlnwa/sigridr/database"
+	"github.com/nlnwa/sigridr/types"
 )
 
-type JobStore struct {
-	*db.Database
+type jobStore struct {
+	*database.Rethink
 }
 
-func New() *JobStore {
-	return &JobStore{db.New()}
+func newJobStore() *jobStore {
+	return &jobStore{database.New()}
 }
 
-func (js *JobStore) GetJobs() []types.Job {
+func (js *jobStore) Connect() error {
+	return js.Rethink.Connect(database.DefaultOptions())
+}
+
+func (js *jobStore) GetJobs() []types.Job {
 	var jobs []types.Job
 
-	err := js.ListTable("jobs", &jobs)
+	err := js.ListTable("job", &jobs)
 	if err != nil {
 		log.WithError(err).Error("Getting jobs from database")
 		return make([]types.Job, 0)
@@ -33,10 +37,10 @@ func (js *JobStore) GetJobs() []types.Job {
 	return jobs
 }
 
-func (js *JobStore) getSeeds(job *types.Job) []types.Seed {
+func (js *jobStore) getSeeds(job *types.Job) []types.Seed {
 	var seeds []types.Seed
 
-	cursor, err := js.Filter("seeds", func(seed r.Term) r.Term {
+	cursor, err := js.Filter("seed", func(seed r.Term) r.Term {
 		return seed.Field("jobId").Contains(job.Id)
 	})
 	if err != nil {

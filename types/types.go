@@ -14,7 +14,7 @@ type Label struct {
 	Value string `json:"value,omitempty"`
 }
 
-func (l *Label) ToProto() *sigridr.Label {
+func (l *Label) ToProto() *api.Label {
 	label := api.Label(*l)
 
 	return &label
@@ -23,7 +23,6 @@ func (l *Label) ToProto() *sigridr.Label {
 func (l *Label) FromProto(label *api.Label) *Label {
 	m := Label(*label)
 	l = &m
-
 	return l
 }
 

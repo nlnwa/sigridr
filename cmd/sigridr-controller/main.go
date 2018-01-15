@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/nlnwa/sigridr/controller"
-	"github.com/nlnwa/sigridr/pkg/signal"
+	"github.com/nlnwa/sigridr/signal"
 )
 
 var (
@@ -20,12 +20,18 @@ func init() {
 }
 
 func main() {
+	config := controller.Config{
+		Agent: address,
+	}
+
 	scheduler := cron.NewScheduler().Location(time.UTC).Interval(time.Minute)
 
-	scheduler.AddCollector(controller.NewDbCollector())
+	scheduler.AddCollector(controller.NewDbCollector(config))
 
 	scheduler.Start()
 	defer scheduler.Stop()
 
-	<-signal.Receive(syscall.SIGHUP, syscall.SIGTERM, syscall.SIGTERM, syscall.SIGQUIT)
+	log.WithField("interval", time.Minute).Infoln("Scheduler running")
+
+	<-signal.Receive(syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 }
