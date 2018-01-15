@@ -47,7 +47,7 @@ func (r *Response) fromHttpResponse(response *http.Response) *Response {
 }
 
 // NewClient creates a new Client using the provided httpClient
-func NewClient(httpClient *http.Client) *Client {
+func New(httpClient *http.Client) *Client {
 	return &Client{lib: twitter.NewClient(httpClient)}
 }
 

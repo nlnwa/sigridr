@@ -23,17 +23,10 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	log "github.com/sirupsen/logrus"
 
-	pb "github.com/nlnwa/sigridr/api/sigridr"
+	"github.com/nlnwa/sigridr/api"
 )
 
-const (
-	MAX_STATUSES_PER_REQUEST = 100
-	headerPrefix             = "X-Rate-Limit-"
-)
-
-var (
-	mutex sync.Mutex // guard rateLimit against concurrent access
-)
+const headerPrefix = "X-Rate-Limit-"
 
 type RateLimit struct {
 	Limit     int
@@ -45,15 +38,15 @@ func New() *RateLimit {
 	return &RateLimit{Limit: 450, Remaining: 450}
 }
 
-func (rl *RateLimit) ToProto() *pb.RateLimit {
+func (rl *RateLimit) ToProto() *api.RateLimit {
 	reset, err := ptypes.TimestampProto(rl.Reset)
 	if err != nil {
 		log.WithError(err).Error()
 	}
-	return &pb.RateLimit{int32(rl.Limit), int32(rl.Remaining), reset}
+	return &api.RateLimit{int32(rl.Limit), int32(rl.Remaining), reset}
 }
 
-func (rl *RateLimit) FromProto(rateLimit *pb.RateLimit) *RateLimit {
+func (rl *RateLimit) FromProto(rateLimit *api.RateLimit) *RateLimit {
 	reset, err := ptypes.Timestamp(rateLimit.GetReset_())
 	if err != nil {
 		log.WithError(err).Error()

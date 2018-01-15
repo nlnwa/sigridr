@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"strings"
 	"sync"
@@ -11,12 +10,13 @@ import (
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+
+	"github.com/nlnwa/sigridr/agent"
 )
 
 var (
 	workerAddress *string = flag.String("worker-address", "localhost:10001", "worker service address")
 	port          int
-	wg            sync.WaitGroup
 )
 
 func init() {
@@ -32,27 +32,35 @@ func init() {
 func main() {
 	flag.Parse()
 	port = viper.GetInt("port")
+	workerAddress = viper.GetString("worker-address")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var opts []grpc.ServerOption
-	server := grpc.NewServer(opts...)
-
-	new(agent).register(server)
-
-
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-	if err != nil {
-		log.WithError(err).Fatal()
-	} else {
-		log.WithField("port", port).Debugln("Listening")
+	workerConfig := agent.Config{
+		Worker: workerAddress,
 	}
+	var grpcOpts []grpc.ServerOption
 
-	wg.Add(1)
-	go queueWorker(ctx, &wg)
+	errc := make(chan error, 2)
 
-	server.Serve(listener)
+	go func() {
+		errc <- func() error {
+			listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+			if err != nil {
+				return log.WithError(err).Errorf("listening on %s failed", port)
+			}
+			server := grpc.NewServer(grpcOpts...)
+			api.RegisterAgentServer(server, agent.NewApi())
+			err = server.Serve(listener)
+			log.WithError(err).Error()
+			return err
+		}()
+	}()
 
-	wg.Wait()
+	go func() {
+		errc <- agent.Worker(ctx, workerConfig)
+	}()
+
+	return <-errc
 }

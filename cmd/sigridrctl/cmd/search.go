@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -45,11 +46,12 @@ var searchCmd = &cobra.Command{
 			TweetMode:  "extended",
 		}
 
-		// Get authorized httpClient
+		// Get authorized httpClient and set timeout
 		httpClient := auth.HttpClient(viper.Get("token"))
+		httpClient.Timeout = 10 * time.Seconds()
 
 		// Get twitter client
-		client := twitter.NewClient(httpClient)
+		client := twitter.New(httpClient)
 
 		// Search twitter using params
 		result, response, err := client.Search(params)

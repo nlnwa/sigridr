@@ -6,38 +6,40 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	netcontext "golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	pb "github.com/nlnwa/sigridr/api/sigridr"
-	"github.com/nlnwa/sigridr/pkg/db"
+	"github.com/nlnwa/sigridr/api"
 	"github.com/nlnwa/sigridr/pkg/twitter/ratelimit"
 )
 
 var (
-	conn   *grpc.ClientConn
-	client pb.WorkerClient
+	conn       *grpc.ClientConn
+	client     pb.WorkerClient
+	queueStore *store.QueueStore
 )
 
-func queueWorker(ctx context.Context, wg *sync.WaitGroup) {
+func Worker(ctx context.Context, c Config) error {
 	timer := time.NewTimer(0)
+	queueStore = store.New()
 
-	defer func() {
-		timer.Stop()
-		wg.Done()
-	}()
+	defer timer.Stop()
 
 	for {
 		// wait for timer or return if done
 		select {
 		case <-timer.C:
-			err := connect()
+			err := queueStore.Connect()
+			if err != nil {
+				timer.Reset(time.Minute)
+				break
+			}
+			err := connect(c)
 			if err != nil {
 				log.WithError(err).Errorln("failed to connect, will sleep and try again later")
 				timer.Reset(time.Minute)
 				break
 			}
-			for queuedSeed := range db.GetNextToFetch(ctx) {
+			for queuedSeed := range queueStore.GetNextToFetch(ctx) {
 				if queuedSeed == nil {
 					timer.Reset(time.Minute)
 					break
@@ -54,7 +56,7 @@ func queueWorker(ctx context.Context, wg *sync.WaitGroup) {
 					"timeout":   rateLimit.Timeout(),
 				}).Debugln("Ratelimit")
 
-				// stop fetching if ratelimit
+				// stop fetching if ratelimit reached
 				if rateLimit.Remaining < 1 {
 					timer.Reset(rateLimit.Timeout() + 5*time.Second)
 					break
@@ -62,7 +64,7 @@ func queueWorker(ctx context.Context, wg *sync.WaitGroup) {
 			}
 			disconnect()
 		case <-ctx.Done():
-			return
+			return nil
 		}
 	}
 }
@@ -70,7 +72,7 @@ func queueWorker(ctx context.Context, wg *sync.WaitGroup) {
 // dispatch sends work to the client
 func dispatch(ctx context.Context, queuedSeed *pb.QueuedSeed) (*ratelimit.RateLimit, error) {
 	if queuedSeed.GetSeq() == 0 {
-		params, err := db.SearchParameters(queuedSeed.GetSeedId())
+		params, err := queueStore.SearchParameters(queuedSeed.GetSeedId())
 		if err != nil {
 			return nil, err
 		}
@@ -78,7 +80,7 @@ func dispatch(ctx context.Context, queuedSeed *pb.QueuedSeed) (*ratelimit.RateLi
 	}
 	work := &pb.WorkRequest{QueuedSeed: queuedSeed}
 
-	ctx, cancel := netcontext.WithTimeout(ctx, time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
 	reply, err := client.Do(ctx, work)
@@ -87,7 +89,7 @@ func dispatch(ctx context.Context, queuedSeed *pb.QueuedSeed) (*ratelimit.RateLi
 	}
 
 	// remove seed from queue
-	err = db.DeleteQueuedSeed(queuedSeed.Id)
+	err = queueStore.DeleteQueuedSeed(queuedSeed.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -99,30 +101,41 @@ func dispatch(ctx context.Context, queuedSeed *pb.QueuedSeed) (*ratelimit.RateLi
 	if reply.Count < ratelimit.MAX_STATUSES_PER_REQUEST {
 		reply.QueuedSeed.Parameters.MaxId = ""
 		reply.QueuedSeed.Parameters.SinceId = reply.GetSinceId()
-		db.SaveSearchParameters(reply.QueuedSeed.Parameters)
 	} else {
 		reply.QueuedSeed.Parameters.MaxId = reply.GetMaxId()
-		db.SaveSearchParameters(reply.QueuedSeed.Parameters)
 
 		reply.QueuedSeed.Seq++
-		db.EnqueueSeed(reply.QueuedSeed)
+		queueStore.EnqueueSeed(reply.QueuedSeed)
 	}
+	err = queueStore.SaveSearchParameters(reply.QueuedSeed.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	return new(ratelimit.RateLimit).FromProto(reply.RateLimit), nil
 }
 
-// connect establishes a connection to gRPC server and creates a new client which use the connection.
-func connect() error {
+// connect establishes:
+// - a connection to gRPC server and creates a new client which use the connection.
+// - a database session
+func connect(c Config) error {
 	var err error
 	opts := grpc.WithInsecure()
-	conn, err = grpc.Dial(*workerAddress, opts)
+	conn, err = grpc.Dial(c.Worker, opts)
 	if err != nil {
 		return err
 	}
 	client = pb.NewWorkerClient(conn)
+
+	err = queueStore.Connect()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-// disconnect closes the connection to the gRPC server.
+// disconnect closes the connection to the gRPC server and the database session
 func disconnect() {
+	queueStore.Disconnect()
 	conn.Close()
 }

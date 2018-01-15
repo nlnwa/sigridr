@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"net/url"
 	"time"
 
 	"github.com/google/uuid"
@@ -23,11 +22,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/nlnwa/sigridr/pkg/db"
+	"github.com/nlnwa/sigridr/pkg/database"
 	"github.com/nlnwa/sigridr/pkg/types"
 )
 
-var databaseAddress string
+var (
+	databaseAddress string
+	db              *database.Db
+)
 
 // dbCmd represents the db command
 var dbCmd = &cobra.Command{
@@ -36,13 +38,8 @@ var dbCmd = &cobra.Command{
 	Long:  `Database test command`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		log.SetLevel(log.DebugLevel)
-		opts := db.Options{Database: "sigridr"}
-		u, err := url.Parse(viper.GetString("database-address"))
-		if err != nil {
-			log.WithError(err).Fatal()
-		} else {
-			opts.Address = u.Path
-		}
+		db = database.New()
+		opts := database.ConnectOpts{Database: "sigridr", Address: viper.GetString("database-address")}
 		db.ConnectWithOptions(opts)
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
@@ -51,9 +48,8 @@ var dbCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		now := time.Now().UTC()
 
-		db.DropDatabase("sigridr")
-		db.CreateDatabase("sigridr")
-		db.Use("sigridr")
+		db.DropDb("sigridr")
+		db.CreateDb("sigridr")
 		db.CreateTable("results")
 		db.CreateTable("jobs")
 		db.CreateTable("entities")
@@ -80,33 +76,9 @@ var dbCmd = &cobra.Command{
 	},
 }
 
-// createCmd represents the db create subcommand
-var createCmd = &cobra.Command{
-	Use:   "create db|table name",
-	Short: "Initialize database",
-	Long:  `Initialize database`,
-	Args:  cobra.ExactArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
-		command := args[0]
-		arg := args[1]
-
-		switch command {
-		case "database":
-			fallthrough
-		case "db":
-			db.CreateDatabase(arg)
-		case "table":
-			db.CreateTable(arg)
-		default:
-			log.Println("No op", command)
-		}
-	},
-}
-
 func init() {
 	RootCmd.AddCommand(dbCmd)
-	dbCmd.AddCommand(createCmd)
 
-	dbCmd.PersistentFlags().StringVarP(&databaseAddress, "database-address", "d", "", "Address to the Database service")
+	dbCmd.PersistentFlags().StringVarP(&databaseAddress, "database-address", "d", "localhost:28015", "Database address")
 	viper.BindPFlag("database-address", dbCmd.PersistentFlags().Lookup("database-address"))
 }

@@ -1,25 +1,19 @@
-package main
+package worker
 
 import (
+	"context"
 	"strconv"
-	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
+
 	"google.golang.org/grpc"
 
-	pb "github.com/nlnwa/sigridr/api/sigridr"
-	"github.com/nlnwa/sigridr/pkg/db"
-	"github.com/nlnwa/sigridr/pkg/twitter"
-	"github.com/nlnwa/sigridr/pkg/twitter/auth"
-	"github.com/nlnwa/sigridr/pkg/twitter/ratelimit"
-)
-
-var (
-	once   sync.Once
-	client *twitter.Client
-	wg     sync.WaitGroup
+	"github.com/nlnwa/sigridr/api"
+	"github.com/nlnwa/sigridr/auth"
+	"github.com/nlnwa/sigridr/database"
+	"github.com/nlnwa/sigridr/twitter"
+	"github.com/nlnwa/sigridr/twitter/ratelimit"
 )
 
 // result storage format
@@ -33,9 +27,19 @@ type SearchResult struct {
 	Response   *twitter.Response `json:"response,omitempty"`
 }
 
-type worker struct{}
+type worker struct {
+	store  *db.Database
+	client *twitter.Client
+}
 
-func (s *worker) Do(context context.Context, work *pb.WorkRequest) (*pb.WorkReply, error) {
+func NewApi(c Config) api.WorkerServer {
+	httpClient := auth.HttpClient(c.AccessToken)
+	httpClient.Timeout = 10 * time.Seconds()
+
+	return &worker{db.New(), twitter.New(httpClient)}
+}
+
+func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkReply, error) {
 	queuedSeed := work.QueuedSeed
 
 	params := &twitter.Params{
@@ -55,7 +59,7 @@ func (s *worker) Do(context context.Context, work *pb.WorkRequest) (*pb.WorkRepl
 
 	now := time.Now().UTC()
 
-	result, response, err := twitterClient().Search(params)
+	result, response, err := w.client.Search(params)
 	if err != nil {
 		log.WithError(err).Errorln("searching twitter")
 		return nil, err
@@ -78,7 +82,7 @@ func (s *worker) Do(context context.Context, work *pb.WorkRequest) (*pb.WorkRepl
 		Statuses:   &result.Statuses,
 		Response:   response,
 	}
-	id, err := db.SaveSearchResult(search)
+	id, err := w.store.saveSearchResult(search)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +100,7 @@ func (s *worker) Do(context context.Context, work *pb.WorkRequest) (*pb.WorkRepl
 		return nil, err
 	}
 
-	return &pb.WorkReply{
+	return &api.WorkReply{
 		QueuedSeed: queuedSeed,
 		Count:      int32(len(result.Statuses)),
 		MaxId:      maxIdStr,
@@ -106,17 +110,11 @@ func (s *worker) Do(context context.Context, work *pb.WorkRequest) (*pb.WorkRepl
 
 }
 
-// register worker with server.
-func (s *worker) register(server *grpc.Server) {
-	pb.RegisterWorkerServer(server, s)
-}
-
-// twitterClient returns a twitter client.
-func twitterClient() *twitter.Client {
-	// init client only once
-	once.Do(func() {
-		httpClient := auth.HttpClient(accessToken)
-		client = twitter.NewClient(httpClient)
-	})
-	return client
+func (w *worker) saveSearchResult(value interface{}) (string, error) {
+	err := w.store.Connect()
+	defer w.store.Disconnect()
+	if err != nil {
+		return "", err
+	}
+	return w.Insert("results", value)
 }

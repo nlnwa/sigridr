@@ -15,15 +15,17 @@
 package cmd
 
 import (
+	"context"
 	"strings"
 
-	"golang.org/x/oauth2"
 	"github.com/mitchellh/go-homedir"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/oauth2"
+
+	"github.com/nlnwa/sigridr/cmd/sigridrctl"
 	"github.com/nlnwa/sigridr/pkg/twitter/auth"
-	"github.com/nlnwa/sigridr/cmd/sigridrctl/config"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -84,7 +86,6 @@ func initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-
 		// Search config in home directory with name ".sigridr" (without extension).
 		viper.AddConfigPath(home)
 		viper.SetConfigName(".sigridr")
@@ -92,7 +93,7 @@ func initConfig() {
 
 	viper.AutomaticEnv() // read in environment variables that match
 
-	// If a config file is found, read it in.
+	// If a config file is found, read it
 	if err := viper.ReadInConfig(); err == nil {
 		log.WithFields(log.Fields{"path": viper.ConfigFileUsed()}).Debugln("Configuration file used")
 
@@ -100,22 +101,23 @@ func initConfig() {
 			log.WithField(key, viper.Get(key)).Debugln("Configuration value")
 		}
 	} else {
+		// no config file found - set default config file
 		viper.SetConfigFile(home + "/.sigridr.yaml")
 	}
 
-	// Fetch oauth2 token and store it in config if consumer key and consumer secret provided
+	// If consumer key and consumer secret provided fetch oauth2 token and store it in config file
 	if ck, cs := viper.GetString("consumer-key"), viper.GetString("consumer-secret"); ck != "" && cs != "" {
-		token, err := auth.GetTwitterOauth2Token(ck, cs)
+		token, err := twitter.Oauth2Token(ck, cs)
 		if err != nil {
 			log.WithError(err).Fatal()
 		}
 		viper.Set("token", token)
-		config.Write()
+		sigridrctl.WriteConfig()
 	}
 
-	// If access token provided, use it and store it
+	// If access token provided, use it and store it in config file
 	if accessToken := viper.Get("access-token"); accessToken != "" {
 		viper.Set("token", &oauth2.Token{AccessToken: accessToken.(string)})
-		config.Write()
+		sigridrctl.WriteConfig()
 	}
 }

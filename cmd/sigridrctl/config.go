@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package cmd
 
 import (
 	"os"
 
-	"golang.org/x/oauth2"
-	"github.com/spf13/viper"
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+	"golang.org/x/oauth2"
 )
 
 type config struct {
@@ -32,7 +32,7 @@ type config struct {
 // Write config file
 //
 // Replaces consumer key and consumer secret with oauth2 access token
-func Write() {
+func WriteConfig() {
 	token := *viper.Get("token").(*oauth2.Token)
 	c := config{Token: token}
 

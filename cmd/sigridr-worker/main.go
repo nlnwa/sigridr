@@ -33,17 +33,26 @@ func main() {
 	port = viper.GetInt("port")
 	accessToken = viper.GetString("access-token")
 
-	opts := make([]grpc.ServerOption, 0)
-	server := grpc.NewServer(opts...)
-
-	new(worker).register(server)
-
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-	if err != nil {
-		log.WithError(err).Fatal()
-	} else {
-		log.WithField("port", port).Infoln("Listening")
+	c := worker.Config{
+		AccessToken: accessToken,
 	}
 
-	server.Serve(listener)
+	var grpcOpts []grpc.ServerOption
+
+	errc := make(chan error)
+	go func() {
+		errc <- func() error {
+			listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+			if err != nil {
+				log.WithError(err).Errorf("listening on %s failed", port)
+				return err
+			}
+			server := grpc.NewServer(grpcOpts...)
+			api.RegisterWorkerServer(server, worker.NewApi(c))
+
+			return server.Serve(listener)
+		}()
+	}()
+
+	return <-errc
 }

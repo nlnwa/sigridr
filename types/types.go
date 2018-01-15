@@ -6,7 +6,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/nlnwa/sigridr/api/sigridr"
+	"github.com/nlnwa/sigridr/api"
 )
 
 type Label struct {
@@ -15,12 +15,12 @@ type Label struct {
 }
 
 func (l *Label) ToProto() *sigridr.Label {
-	label := sigridr.Label(*l)
+	label := api.Label(*l)
 
 	return &label
 }
 
-func (l *Label) FromProto(label *sigridr.Label) *Label {
+func (l *Label) FromProto(label *api.Label) *Label {
 	m := Label(*label)
 	l = &m
 
@@ -37,8 +37,8 @@ type Meta struct {
 	Label          []*Label  `json:"label,omitempty"`
 }
 
-func (s *Meta) ToProto() *sigridr.Meta {
-	label := make([]*sigridr.Label, 0)
+func (s *Meta) ToProto() *api.Meta {
+	label := make([]*api.Label, 0)
 	for _, l := range s.Label {
 		label = append(label, l.ToProto())
 	}
@@ -51,7 +51,7 @@ func (s *Meta) ToProto() *sigridr.Meta {
 		log.WithError(err).Error()
 	}
 
-	return &sigridr.Meta{
+	return &api.Meta{
 		Name:           s.Name,
 		Description:    s.Description,
 		Created:        created,
@@ -62,7 +62,7 @@ func (s *Meta) ToProto() *sigridr.Meta {
 	}
 }
 
-func (m *Meta) FromProto(meta *sigridr.Meta) *Meta {
+func (m *Meta) FromProto(meta *api.Meta) *Meta {
 	m.Name = meta.Name
 	m.Description = meta.Description
 	m.CreatedBy = meta.CreatedBy
@@ -97,8 +97,8 @@ type Seed struct {
 	Disabled bool     `json:"disabled,omitempty"`
 }
 
-func (s *Seed) ToProto() *sigridr.Seed {
-	return &sigridr.Seed{
+func (s *Seed) ToProto() *api.Seed {
+	return &api.Seed{
 		Id:       s.Id,
 		Meta:     s.Meta.ToProto(),
 		EntityId: s.EntityId,
@@ -107,7 +107,7 @@ func (s *Seed) ToProto() *sigridr.Seed {
 	}
 }
 
-func (s *Seed) FromProto(seed *sigridr.Seed) *Seed {
+func (s *Seed) FromProto(seed *api.Seed) *Seed {
 	s.Id = seed.Id
 	s.Meta = new(Meta).FromProto(seed.Meta)
 	s.EntityId = seed.EntityId
@@ -132,7 +132,7 @@ type Job struct {
 	Seeds          []Seed    `json:"seeds,omitempty"`
 }
 
-func (j *Job) FromProto(job *sigridr.Job) *Job {
+func (j *Job) FromProto(job *api.Job) *Job {
 	validTo, err := ptypes.Timestamp(job.ValidTo)
 	if err != nil {
 		log.WithError(err).Error()
@@ -151,7 +151,7 @@ func (j *Job) FromProto(job *sigridr.Job) *Job {
 	return j
 }
 
-func (job *Job) ToProto() *sigridr.Job {
+func (job *Job) ToProto() *api.Job {
 	validTo, err := ptypes.TimestampProto(job.ValidTo)
 	if err != nil {
 		log.WithError(err).Error()
@@ -160,7 +160,7 @@ func (job *Job) ToProto() *sigridr.Job {
 	if err != nil {
 		log.WithError(err).Error()
 	}
-	return &sigridr.Job{
+	return &api.Job{
 		Id:             job.Id,
 		Meta:           job.Meta.ToProto(),
 		CronExpression: job.CronExpression,
@@ -172,7 +172,7 @@ func (job *Job) ToProto() *sigridr.Job {
 }
 
 func (j *Job) IsValid() bool {
-	now := time.Now().UTC();
+	now := time.Now().UTC()
 	isValid := now.After(j.ValidFrom) && now.Before(j.ValidTo)
 	if !isValid {
 		log.WithFields(log.Fields{

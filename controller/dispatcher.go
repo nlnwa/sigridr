@@ -1,18 +1,18 @@
-package main
+package controller
 
 import (
+	"context"
 	"time"
 
-	"google.golang.org/grpc"
-	"golang.org/x/net/context"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 
-	"github.com/nlnwa/sigridr/api/sigridr"
-	"github.com/nlnwa/sigridr/pkg/types"
+	"github.com/nlnwa/sigridr/api"
+	"github.com/nlnwa/sigridr/types"
 )
 
 func dispatch(job *types.Job, seed *types.Seed) {
-	request := sigridr.DoJobRequest{
+	request := api.DoJobRequest{
 		Job:  job.ToProto(),
 		Seed: seed.ToProto(),
 	}
@@ -24,7 +24,7 @@ func dispatch(job *types.Job, seed *types.Seed) {
 	}
 	defer conn.Close()
 
-	agent := sigridr.NewAgentClient(conn)
+	agent := api.NewAgentClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
