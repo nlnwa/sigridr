@@ -10,12 +10,11 @@ import (
 
 	"github.com/nlnwa/sigridr/api"
 	"github.com/nlnwa/sigridr/types"
-
 )
 
 type agentClient struct {
 	address string
-	cc *grpc.ClientConn
+	cc      *grpc.ClientConn
 }
 
 func (ac *agentClient) dial() (api.AgentClient, error) {
@@ -36,7 +35,7 @@ type dispatcher struct {
 }
 
 func newDispatcher(c Config) *dispatcher {
-	return &dispatcher{&agentClient{address: c.Agent}}
+	return &dispatcher{&agentClient{address: c.AgentAddress}}
 }
 
 func (d *dispatcher) dispatch(job *types.Job, seed *types.Seed) {
@@ -59,4 +58,3 @@ func (d *dispatcher) dispatch(job *types.Job, seed *types.Seed) {
 		log.WithField("seed", seed.Meta.Description).Debugln("Dispatch")
 	}
 }
-

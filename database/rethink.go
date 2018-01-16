@@ -18,23 +18,24 @@ import (
 	r "gopkg.in/gorethink/gorethink.v3"
 )
 
-type ConnectOpts = r.ConnectOpts
-
 type Rethink struct {
-	session *r.Session
+	session     *r.Session
+	ConnectOpts *r.ConnectOpts
 }
 
 func New() *Rethink {
-	return new(Rethink)
+	rethink := new(Rethink)
+	rethink.ConnectOpts = DefaultOptions()
+	return rethink
 }
 
 func init() {
 	r.SetTags("gorethink", "json", "url")
 }
 
-func (db *Rethink) Connect(opts ConnectOpts) error {
+func (db *Rethink) Connect() error {
 	var err error
-	db.session, err = r.Connect(opts)
+	db.session, err = r.Connect(*db.ConnectOpts)
 	return err
 }
 

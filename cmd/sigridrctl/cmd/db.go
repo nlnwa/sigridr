@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -36,15 +35,18 @@ var dbCmd = &cobra.Command{
 	Use:   "db",
 	Short: "Database test command",
 	Long:  `Database test command`,
+
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		log.SetLevel(log.DebugLevel)
 		db = database.New()
-		opts := database.ConnectOpts{Database: "sigridr", Address: viper.GetString("database-address")}
-		db.Connect(opts)
+		db.ConnectOpts.Database = "sigridr"
+		db.ConnectOpts.Address = viper.GetString("database-address")
+		db.Connect()
 	},
+
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		db.Disconnect()
 	},
+
 	Run: func(cmd *cobra.Command, args []string) {
 		now := time.Now().UTC()
 

@@ -5,17 +5,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Config struct {
-	Agent string
-}
-
 type dbCollector struct {
 	store      *jobStore
 	dispatcher *dispatcher
 }
 
 func NewDbCollector(c Config) cron.Collector {
-	return &dbCollector{newJobStore(), newDispatcher(c)}
+	return &dbCollector{newJobStore(c), newDispatcher(c)}
 }
 
 // Collect jobs and schedule them with the scheduler

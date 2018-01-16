@@ -4,6 +4,6 @@ import (
 	r "gopkg.in/gorethink/gorethink.v3"
 )
 
-func DefaultOptions() ConnectOpts {
-	return r.ConnectOpts{Database: "sigridr"}
+func DefaultOptions() *r.ConnectOpts {
+	return &r.ConnectOpts{Database: "sigridr"}
 }

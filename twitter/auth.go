@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const TWITTER_OAUTH2_TOKEN_URL = "https://api.twitter.com/oauth2/token"
+const Oauth2TokenUrl = "https://api.twitter.com/oauth2/token"
 
 func Oauth2Token(key string, secret string) (*oauth2.Token, error) {
 	tokenAcquisitionClient := &http.Client{
@@ -20,7 +20,7 @@ func Oauth2Token(key string, secret string) (*oauth2.Token, error) {
 	config := &clientcredentials.Config{
 		ClientID:     key,
 		ClientSecret: secret,
-		TokenURL:     TWITTER_OAUTH2_TOKEN_URL,
+		TokenURL:     Oauth2TokenUrl,
 	}
 	return config.Token(ctx)
 }

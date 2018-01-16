@@ -42,7 +42,11 @@ func (rl *RateLimit) ToProto() *api.RateLimit {
 	if err != nil {
 		log.WithError(err).Error()
 	}
-	return &api.RateLimit{int32(rl.Limit), int32(rl.Remaining), reset}
+	return &api.RateLimit{
+		Limit:     int32(rl.Limit),
+		Remaining: int32(rl.Remaining),
+		Reset_:    reset,
+	}
 }
 
 func (rl *RateLimit) FromProto(rateLimit *api.RateLimit) *RateLimit {

@@ -11,11 +11,14 @@ import (
 	"github.com/nlnwa/sigridr/auth"
 	"github.com/nlnwa/sigridr/database"
 	"github.com/nlnwa/sigridr/twitter"
+	"github.com/nlnwa/sigridr/types"
 	"github.com/nlnwa/sigridr/twitter/ratelimit"
 )
 
 type Config struct {
-	AccessToken string
+	AccessToken     string
+	DatabaseAddress string
+	DatabaseName    string
 }
 
 // result storage format
@@ -27,10 +30,11 @@ type SearchResult struct {
 	Metadata   *twitter.Metadata `json:"search_metadata,omitempty"`
 	Statuses   *[]twitter.Tweet  `json:"statuses,omitempty"`
 	Response   *twitter.Response `json:"response,omitempty"`
+	Params     *api.Parameter    `json:"params,omitempty"`
 }
 
 type worker struct {
-	store  *database.Rethink
+	db     *database.Rethink
 	client *twitter.Client
 }
 
@@ -38,7 +42,11 @@ func NewApi(c Config) api.WorkerServer {
 	httpClient := auth.HttpClient(c.AccessToken)
 	httpClient.Timeout = 10 * time.Second
 
-	return &worker{database.New(), twitter.New(httpClient)}
+	db := database.New()
+	db.ConnectOpts.Address = c.DatabaseAddress
+	db.ConnectOpts.Database = c.DatabaseName
+
+	return &worker{db, twitter.New(httpClient)}
 }
 
 func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkReply, error) {
@@ -47,14 +55,16 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 	params := &twitter.Params{
 		ResultType: "recent",
 		TweetMode:  "extended",
-		Count:      100,
+		Count:      twitter.MaxStatusesPerRequest,
 		Query:      queuedSeed.Parameter.Query,
 	}
-	maxId, err := strconv.ParseInt(queuedSeed.Parameter.MaxId, 10, 64)
+
+	maxId, err := strconv.ParseInt(queuedSeed.Parameter.GetMaxId(), 10, 64)
 	if err == nil {
 		params.MaxID = maxId
 	}
-	sinceId, err := strconv.ParseInt(queuedSeed.Parameter.SinceId, 10, 64)
+
+	sinceId, err := strconv.ParseInt(queuedSeed.Parameter.GetSinceId(), 10, 64)
 	if err == nil {
 		params.SinceID = sinceId
 	}
@@ -83,6 +93,7 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 		Metadata:   result.Metadata,
 		Statuses:   &result.Statuses,
 		Response:   response,
+		Params:     (&types.Params{Params: params}).ToProto(),
 	}
 	id, err := w.saveSearchResult(search)
 	if err != nil {
@@ -114,10 +125,10 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 }
 
 func (w *worker) saveSearchResult(value interface{}) (string, error) {
-	err := w.store.Connect(database.DefaultOptions())
-	defer w.store.Disconnect()
+	err := w.db.Connect()
+	defer w.db.Disconnect()
 	if err != nil {
 		return "", err
 	}
-	return w.store.Insert("result", value)
+	return w.db.Insert("result", value)
 }

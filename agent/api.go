@@ -10,14 +10,17 @@ import (
 	"github.com/nlnwa/sigridr/api"
 	"github.com/nlnwa/sigridr/database"
 	"github.com/nlnwa/sigridr/types"
-
 )
 
 type agentApi struct {
-	store *database.Rethink
+	db *database.Rethink
 }
 
-func NewApi() api.AgentServer {
+func NewApi(c Config) api.AgentServer {
+	db := database.New()
+	db.ConnectOpts.Database = c.DatabaseName
+	db.ConnectOpts.Address = c.DatabaseAddress
+
 	return &agentApi{database.New()}
 }
 
@@ -33,7 +36,7 @@ func (a *agentApi) Do(ctx context.Context, req *api.DoJobRequest) (*pb.Empty, er
 	log.WithField("description", seed.Meta.Description).Debugln("Enqueueing seed")
 
 	queuedSeed := &api.QueuedSeed{
-		SeedId:     seed.Id,
+		SeedId:    seed.Id,
 		Parameter: &api.Parameter{Query: seed.Meta.Name},
 	}
 	err := a.enqueueSeed(queuedSeed)
@@ -44,15 +47,12 @@ func (a *agentApi) Do(ctx context.Context, req *api.DoJobRequest) (*pb.Empty, er
 	return new(pb.Empty), nil
 }
 
-
 func (a *agentApi) enqueueSeed(queuedSeed *api.QueuedSeed) error {
-	err := a.store.Connect(database.DefaultOptions())
-	defer a.store.Disconnect()
+	err := a.db.Connect()
+	defer a.db.Disconnect()
 	if err != nil {
 		return err
 	}
-	_, err = a.store.Insert("queue", queuedSeed)
+	_, err = a.db.Insert("queue", queuedSeed)
 	return err
 }
-
-

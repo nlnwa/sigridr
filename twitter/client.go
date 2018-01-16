@@ -25,7 +25,7 @@ type Client struct {
 	lib *twitter.Client
 }
 
-// Alias go-twitter SearchTweetParams
+// alias go-twitter's types as to not expose them to the rest of the application
 type Params = twitter.SearchTweetParams
 type Metadata = twitter.SearchMetadata
 type Tweet = twitter.Tweet

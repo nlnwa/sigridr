@@ -13,12 +13,17 @@ type queueStore struct {
 	*database.Rethink
 }
 
-func newStore() *queueStore {
-	return &queueStore{database.New()}
+func newStore(c Config) *queueStore {
+	db := database.New()
+	db.ConnectOpts = database.DefaultOptions()
+	db.ConnectOpts.Database = c.DatabaseName
+	db.ConnectOpts.Address = c.DatabaseAddress
+
+	return &queueStore{db}
 }
 
 func (qs *queueStore) connect() error {
-	return qs.Rethink.Connect(database.DefaultOptions())
+	return qs.Rethink.Connect()
 }
 
 func (qs *queueStore) enqueueSeed(queuedSeed *api.QueuedSeed) error {
@@ -35,7 +40,6 @@ func (qs *queueStore) saveParameter(param *api.Parameter) error {
 	return err
 }
 
-
 func (qs *queueStore) parameter(id string) (*api.Parameter, error) {
 	param := new(api.Parameter)
 	err := qs.Get("parameter", id, param)
@@ -44,7 +48,6 @@ func (qs *queueStore) parameter(id string) (*api.Parameter, error) {
 	}
 	return param, nil
 }
-
 
 func (qs *queueStore) deleteQueuedSeed(id string) error {
 	return qs.Delete("queue", id)
