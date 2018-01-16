@@ -20,10 +20,6 @@ var (
 	db     *queueStore
 )
 
-type Config struct {
-	Worker string
-}
-
 type workerClient struct {
 	address string
 	cc      *grpc.ClientConn
@@ -44,8 +40,8 @@ func (wc *workerClient) hangup() error {
 
 func QueueWorker(ctx context.Context, c Config) error {
 	timer := time.NewTimer(0)
-	db = newStore()
-	worker = &workerClient{address: c.Worker}
+	db = newStore(c)
+	worker = &workerClient{address: c.WorkerAddress}
 
 	defer timer.Stop()
 
@@ -97,12 +93,17 @@ func QueueWorker(ctx context.Context, c Config) error {
 
 // dispatch sends work to the client
 func dispatch(ctx context.Context, queuedSeed *api.QueuedSeed) (*ratelimit.RateLimit, error) {
-	param, err := db.parameter(queuedSeed.GetSeedId())
-	if err != nil {
-		return nil, err
-	}
-	if queuedSeed.GetSeq() == 0 && param.GetId() != "" {
-		queuedSeed.Parameter.SinceId = param.GetSinceId()
+	seq := queuedSeed.GetSeq()
+
+	if queuedSeed.Parameter.GetId() == "" {
+		param, err := db.parameter(queuedSeed.GetSeedId())
+		if err != nil {
+			return nil, err
+		}
+		if seq == 0 {
+			queuedSeed.Parameter.Id = param.GetId()
+			queuedSeed.Parameter.SinceId = param.GetSinceId()
+		}
 	}
 	work := &api.WorkRequest{QueuedSeed: queuedSeed}
 
@@ -120,30 +121,27 @@ func dispatch(ctx context.Context, queuedSeed *api.QueuedSeed) (*ratelimit.RateL
 		return nil, err
 	}
 
-	// update queued seed parameters
-	if reply.Count < twitter.MAX_STATUSES_PER_REQUEST {
-		reply.QueuedSeed.Parameter.MaxId = ""
-		reply.QueuedSeed.Parameter.SinceId = reply.GetSinceId()
+	// if possibly more to fetch enqueue next fetch
+	if reply.Count >= twitter.MaxStatusesPerRequest {
+		reply.QueuedSeed.Parameter.MaxId = reply.GetMaxId()
+		reply.QueuedSeed.Seq++
+		db.enqueueSeed(reply.QueuedSeed)
 	}
 
-	// only save/update parameter if first in sequence
-	if reply.QueuedSeed.GetSeq() == 0 {
-		reply.QueuedSeed.Parameter.Id = queuedSeed.GetSeedId()
-		if param.GetId() == "" {
-			err = db.saveParameter(reply.QueuedSeed.Parameter)
+	// only save/update parameters if first in sequence
+	if seq == 0 {
+		queuedSeed.Parameter.MaxId = "" // don't need to save this
+		queuedSeed.Parameter.SinceId = reply.GetSinceId()
+
+		if queuedSeed.Parameter.GetId() == "" {
+			queuedSeed.Parameter.Id = queuedSeed.GetSeedId()
+			err = db.saveParameter(queuedSeed.Parameter)
 		} else {
-			err = db.updateParameter(reply.QueuedSeed.Parameter)
+			err = db.updateParameter(queuedSeed.Parameter)
 		}
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	// enqueue next fetch of queued seed
-	if reply.Count >= twitter.MAX_STATUSES_PER_REQUEST {
-		reply.QueuedSeed.Parameter.MaxId = reply.GetMaxId()
-		reply.QueuedSeed.Seq++
-		db.enqueueSeed(reply.QueuedSeed)
 	}
 
 	return new(ratelimit.RateLimit).FromProto(reply.RateLimit), nil
