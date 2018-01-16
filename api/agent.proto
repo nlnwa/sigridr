@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package api;
+
+import "google/protobuf/empty.proto";
+import "schema.proto";
+
+service Agent {
+    rpc Do (DoJobRequest) returns (google.protobuf.Empty) {
+    }
+}
+
+message DoJobRequest {
+    Job job = 1;
+    Seed seed = 2;
+}

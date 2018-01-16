@@ -17,13 +17,14 @@ package cmd
 import (
 	"strings"
 
-	"golang.org/x/oauth2"
 	"github.com/mitchellh/go-homedir"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/nlnwa/sigridr/auth"
-	"github.com/nlnwa/sigridr/util"
-	log "github.com/sirupsen/logrus"
+	"golang.org/x/oauth2"
+
+	"github.com/nlnwa/igri/cmd/sigridrctl/config"
+	"github.com/nlnwa/sigridr/twitter"
 )
 
 var (
@@ -55,13 +56,13 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.sigridr.yaml)")
-
+	RootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "Config file (default is $HOME/.sigridr.yaml")
 	RootCmd.PersistentFlags().StringVarP(&consumerSecret, "consumer-secret", "s", "", "Consumer secret")
 	RootCmd.PersistentFlags().StringVarP(&consumerKey, "consumer-key", "k", "", "Consumer key")
 	RootCmd.PersistentFlags().StringVarP(&accessToken, "access-token", "a", "", "Access token")
-	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "", false, "Turn on debugging")
+	RootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Turn on debugging")
 
+	viper.BindPFlag("config", RootCmd.PersistentFlags().Lookup("config"))
 	viper.BindPFlag("consumer-secret", RootCmd.PersistentFlags().Lookup("consumer-secret"))
 	viper.BindPFlag("consumer-key", RootCmd.PersistentFlags().Lookup("consumer-key"))
 	viper.BindPFlag("access-token", RootCmd.PersistentFlags().Lookup("access-token"))
@@ -84,7 +85,6 @@ func initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-
 		// Search config in home directory with name ".sigridr" (without extension).
 		viper.AddConfigPath(home)
 		viper.SetConfigName(".sigridr")
@@ -92,7 +92,7 @@ func initConfig() {
 
 	viper.AutomaticEnv() // read in environment variables that match
 
-	// If a config file is found, read it in.
+	// If a config file is found, read it
 	if err := viper.ReadInConfig(); err == nil {
 		log.WithFields(log.Fields{"path": viper.ConfigFileUsed()}).Debugln("Configuration file used")
 
@@ -100,22 +100,23 @@ func initConfig() {
 			log.WithField(key, viper.Get(key)).Debugln("Configuration value")
 		}
 	} else {
+		// no config file found - set default config file
 		viper.SetConfigFile(home + "/.sigridr.yaml")
 	}
 
-	// Fetch oauth2 token and store it in config if consumer key and consumer secret provided
+	// If consumer key and consumer secret provided fetch oauth2 token and store it in config file
 	if ck, cs := viper.GetString("consumer-key"), viper.GetString("consumer-secret"); ck != "" && cs != "" {
-		token, err := auth.GetTwitterOauth2Token(ck, cs)
+		token, err := twitter.Oauth2Token(ck, cs)
 		if err != nil {
 			log.WithError(err).Fatal()
 		}
 		viper.Set("token", token)
-		util.WriteConfig()
+		config.Write()
 	}
 
-	// If access token provided, use it and store it
-	if accessToken != "" {
-		viper.Set("token", &oauth2.Token{AccessToken: accessToken})
-		util.WriteConfig()
+	// If access token provided, use it and store it in config file
+	if accessToken := viper.Get("access-token"); accessToken != "" {
+		viper.Set("token", &oauth2.Token{AccessToken: accessToken.(string)})
+		config.Write()
 	}
 }

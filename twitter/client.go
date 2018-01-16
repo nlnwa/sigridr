@@ -18,65 +18,44 @@ import (
 	"net/http"
 
 	"github.com/dghubble/go-twitter/twitter"
-	log "github.com/sirupsen/logrus"
 )
 
-// Wrap go-twitter
+// Wrap go-twitter client
 type Client struct {
 	lib *twitter.Client
 }
 
-// Alias go-twitter SearchTweetParams
-type SearchParams = twitter.SearchTweetParams
+// alias go-twitter's types as to not expose them to the rest of the application
+type Params = twitter.SearchTweetParams
+type Metadata = twitter.SearchMetadata
+type Tweet = twitter.Tweet
+type Result = twitter.Search
+
+type Response struct {
+	Status   string              `json:"status"`
+	Code     int                 `json:"code"`
+	Protocol string              `json:"protocol"`
+	Header   map[string][]string `json:"header"`
+}
+
+func (r *Response) fromHttpResponse(response *http.Response) *Response {
+	r.Header = response.Header
+	r.Status = response.Status
+	r.Code = response.StatusCode
+	r.Protocol = response.Proto
+	return r
+}
 
 // NewClient creates a new Client using the provided httpClient
-func NewClient(httpClient *http.Client) *Client {
+func New(httpClient *http.Client) *Client {
 	return &Client{lib: twitter.NewClient(httpClient)}
 }
 
-// Twitter Search API search
-func (client *Client) Search(params *SearchParams) []twitter.Tweet {
-	params.Count = 1000
-	params.TweetMode = "extended"
-
+// Search searches using Twitter's Search API
+func (client *Client) Search(params *Params) (*Result, *Response, error) {
 	search, response, err := client.lib.Search.Tweets(params)
 	if err != nil {
-		log.WithError(err).Errorln("Searching twitter")
+		return nil, nil, err
 	}
-
-	// DEBUG
-	if log.GetLevel() == log.DebugLevel {
-		// Protocol
-		log.WithField("Protocol", response.Proto).Debugln("Protocol")
-
-		// HTTP Headers
-		for k, v := range response.Header {
-			switch k {
-			default:
-				log.WithField(k, v).Debugln("HTTP Header")
-			}
-		}
-
-		// Twitter Search API Metadata
-		log.WithFields(log.Fields{
-			"Count":       search.Metadata.Count,
-			"SinceID":     search.Metadata.SinceID,
-			"SinceIDStr":  search.Metadata.SinceIDStr,
-			"MaxID":       search.Metadata.MaxID,
-			"MaxIDStr":    search.Metadata.MaxIDStr,
-			"RefreshURL":  search.Metadata.RefreshURL,
-			"NextResults": search.Metadata.NextResults,
-			"CompletedIn": search.Metadata.CompletedIn,
-			"Query":       search.Metadata.Query,
-		}).Debugln("Metadata describes a search result")
-
-		// Rate rimits
-		rl := NewRateLimit(&response.Header)
-		log.WithFields(log.Fields{
-			"limit":     rl.Limit,
-			"remaining": rl.Remaining,
-			"reset":     rl.Reset,
-		}).Debugln("Rate limit")
-	}
-	return search.Statuses
+	return search, new(Response).fromHttpResponse(response), nil
 }

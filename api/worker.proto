@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package api;
+
+import "schema.proto";
+
+service Worker {
+    rpc Do (WorkRequest) returns (WorkReply) {
+    }
+}
+
+message WorkRequest {
+    QueuedSeed queued_seed = 1;
+}
+
+message WorkReply {
+    QueuedSeed queued_seed = 1;
+    int32 count = 2;
+    string max_id = 3;
+    string since_id = 4;
+    RateLimit rate_limit = 15;
+}
