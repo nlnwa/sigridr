@@ -4,7 +4,6 @@ package api;
 
 import "schema.proto";
 
-// Service for controlling frontier.
 service Worker {
     rpc Do (WorkRequest) returns (WorkReply) {
     }

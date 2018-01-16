@@ -5,9 +5,9 @@ package api;
 import "google/protobuf/empty.proto";
 import "schema.proto";
 
-// Service for controlling frontier.
 service Agent {
-    rpc Do (DoJobRequest) returns (google.protobuf.Empty) {}
+    rpc Do (DoJobRequest) returns (google.protobuf.Empty) {
+    }
 }
 
 message DoJobRequest {

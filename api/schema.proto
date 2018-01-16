@@ -3,13 +3,11 @@ syntax = "proto3";
 package api;
 
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/any.proto";
 
 message Label {
     string key = 1;
     string value = 2;
 }
-
 
 message Meta {
     string name = 1;
@@ -48,6 +46,14 @@ message Parameter {
     string query = 3;
     string max_id = 4;
     string since_id = 5;
+    string geocode = 6;
+    string lang = 7;
+    string result_type = 8;
+    int32 count = 9;
+    string until = 10;
+    bool include_entities = 11;
+    string tweet_mode = 12;
+    string locale = 13;
 }
 
 message QueuedSeed {
@@ -63,22 +69,3 @@ message RateLimit {
     int32 remaining = 2;
     google.protobuf.Timestamp reset = 3;
 }
-
-/*
-message SearchMetadata {
-    int32 count = 1;
-    string since_id = 2 [json_name = "since_id"];
-    string max_id = 3 [json_name = "max_id"];
-    string refresh_url = 4 [json_name = "refresh_url"];
-    string next_results = 5 [json_name = "next_results"];
-    float completed_in = 6 [json_name = "completed_in"];
-    string query = 7;
-}
-
-message SearchResult {
-    string id = 1;
-    string ref = 2;
-    int32 seq = 3;
-    google.protobuf.Timestamp start_time = 4;
-}
-*/
