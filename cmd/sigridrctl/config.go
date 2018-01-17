@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package main
 
 import (
 	"os"
@@ -26,14 +26,14 @@ import (
 type config struct {
 	consumerKey    string
 	consumerSecret string
-	Token          oauth2.Token `json:"token"`
+	Token          *oauth2.Token `json:"token"`
 }
 
 // Write config file
 //
 // Replaces consumer key and consumer secret with oauth2 access token
-func Write() {
-	token := *viper.Get("token").(*oauth2.Token)
+func writeConfig() {
+	token := viper.Get("token").(*oauth2.Token)
 	c := config{Token: token}
 
 	y, err := yaml.Marshal(c)
