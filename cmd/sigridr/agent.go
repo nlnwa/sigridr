@@ -36,13 +36,17 @@ var agentCmd = &cobra.Command{
 }
 
 func init() {
+	cobra.OnInitialize(func() {
+		initViper(agentViper)
+	})
+
 	cmd := agentCmd
 
 	rootCmd.AddCommand(cmd)
 
 	cmd.Flags().Int("port", 10000, "Server listening port")
 	cmd.Flags().String("worker-host", "localhost", "Worker hostname")
-	cmd.Flags().Int("worker-port", 10002, "Worker port")
+	cmd.Flags().Int("worker-port", 10001, "Worker port")
 
 	agentViper.BindPFlag("port", cmd.Flags().Lookup("port"))
 	agentViper.BindPFlag("worker-host", cmd.Flags().Lookup("worker-host"))

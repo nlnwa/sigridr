@@ -32,8 +32,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	cobra.OnInitialize(func() {
-		viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-		viper.AutomaticEnv()
+		initViper(viper.GetViper())
 	})
 
 	rootCmd.PersistentFlags().String("db-host", "localhost", "Database hostname")
@@ -44,6 +43,11 @@ func init() {
 	viper.BindPFlag("db-name", rootCmd.PersistentFlags().Lookup("db-name"))
 	viper.BindPFlag("db-host", rootCmd.PersistentFlags().Lookup("db-host"))
 	viper.BindPFlag("db-port", rootCmd.PersistentFlags().Lookup("db-port"))
+}
+
+func initViper(v *viper.Viper) {
+	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	v.AutomaticEnv()
 }
 
 func globalFlags() (dbHost string, dbPort int, dbName string) {

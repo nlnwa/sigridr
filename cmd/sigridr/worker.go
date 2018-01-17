@@ -31,6 +31,10 @@ var workerCmd = &cobra.Command{
 }
 
 func init() {
+	cobra.OnInitialize(func() {
+		initViper(workerViper)
+	})
+
 	cmd := workerCmd
 
 	rootCmd.AddCommand(cmd)

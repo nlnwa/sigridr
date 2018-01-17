@@ -34,6 +34,10 @@ var controllerCmd = &cobra.Command{
 }
 
 func init() {
+	cobra.OnInitialize(func() {
+		initViper(controllerViper)
+	})
+
 	cmd := controllerCmd
 
 	rootCmd.AddCommand(cmd)
