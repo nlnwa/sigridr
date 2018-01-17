@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/nlnwa/sigridr/auth"
 	"github.com/nlnwa/sigridr/database"
 	"github.com/nlnwa/sigridr/twitter"
-	"github.com/nlnwa/sigridr/types"
 	"github.com/nlnwa/sigridr/twitter/ratelimit"
 )
 
@@ -21,8 +21,7 @@ type Config struct {
 	DatabaseName    string
 }
 
-// result storage format
-type SearchResult struct {
+type searchResult struct {
 	Id         string            `json:"id,omitempty"`
 	CreateTime time.Time         `json:"create_time,omitempty"`
 	Seq        int32             `json:"seq,omitempty"`
@@ -33,20 +32,47 @@ type SearchResult struct {
 	Params     *api.Parameter    `json:"params,omitempty"`
 }
 
+type workerStore struct {
+	*database.Rethink
+	*database.ConnectOpts
+}
+
+func newStore(c Config) *workerStore {
+	return &workerStore{
+		Rethink: database.New(),
+		ConnectOpts: &database.ConnectOpts{
+			Database: c.DatabaseName,
+			Address:  c.DatabaseAddress,
+		},
+	}
+}
+
+func (ws *workerStore) saveSearchResult(value interface{}) (string, error) {
+	if err := ws.Connect(ws.ConnectOpts); err != nil {
+		return "", err
+	} else {
+		defer ws.Disconnect()
+	}
+	if id, err := ws.Insert("result", value); err != nil {
+		return "", fmt.Errorf("inserting search result into database: %v", err)
+	} else {
+		return id, nil
+	}
+}
+
 type worker struct {
-	db     *database.Rethink
-	client *twitter.Client
+	store  *workerStore
+	client twitter.Client
 }
 
 func NewApi(c Config) api.WorkerServer {
 	httpClient := auth.HttpClient(c.AccessToken)
 	httpClient.Timeout = 10 * time.Second
 
-	db := database.New()
-	db.ConnectOpts.Address = c.DatabaseAddress
-	db.ConnectOpts.Database = c.DatabaseName
-
-	return &worker{db, twitter.New(httpClient)}
+	return &worker{
+		store:  newStore(c),
+		client: twitter.New(httpClient),
+	}
 }
 
 func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkReply, error) {
@@ -86,16 +112,16 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 		}).Infoln("search")
 	}
 
-	search := &SearchResult{
+	search := &searchResult{
 		Seq:        queuedSeed.GetSeq(),
 		Ref:        queuedSeed.GetRef(),
 		CreateTime: now,
 		Metadata:   result.Metadata,
 		Statuses:   &result.Statuses,
 		Response:   response,
-		Params:     (&types.Params{Params: params}).ToProto(),
+		Params:     params.ToProto(),
 	}
-	id, err := w.saveSearchResult(search)
+	id, err := w.store.saveSearchResult(search)
 	if err != nil {
 		log.WithError(err).Errorln("saving search result")
 		return nil, err
@@ -122,13 +148,4 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 		RateLimit:  ratelimit.New().FromHttpHeaders(response.Header).ToProto(),
 	}, nil
 
-}
-
-func (w *worker) saveSearchResult(value interface{}) (string, error) {
-	err := w.db.Connect()
-	defer w.db.Disconnect()
-	if err != nil {
-		return "", err
-	}
-	return w.db.Insert("result", value)
 }

@@ -9,38 +9,40 @@ import (
 	"github.com/nlnwa/sigridr/database"
 )
 
-type queueStore struct {
+type agentStore struct {
 	*database.Rethink
+	*database.ConnectOpts
 }
 
-func newStore(c Config) *queueStore {
-	db := database.New()
-	db.ConnectOpts = database.DefaultOptions()
-	db.ConnectOpts.Database = c.DatabaseName
-	db.ConnectOpts.Address = c.DatabaseAddress
-
-	return &queueStore{db}
+func newStore(c Config) *agentStore {
+	return &agentStore{
+		Rethink: database.New(),
+		ConnectOpts: &database.ConnectOpts{
+			Database: c.DatabaseName,
+			Address:  c.DatabaseAddress,
+		},
+	}
 }
 
-func (qs *queueStore) connect() error {
-	return qs.Rethink.Connect()
+func (qs *agentStore) connect() error {
+	return qs.Rethink.Connect(qs.ConnectOpts)
 }
 
-func (qs *queueStore) enqueueSeed(queuedSeed *api.QueuedSeed) error {
+func (qs *agentStore) enqueueSeed(queuedSeed *api.QueuedSeed) error {
 	_, err := qs.Insert("queue", queuedSeed)
 	return err
 }
 
-func (qs *queueStore) updateParameter(param *api.Parameter) error {
+func (qs *agentStore) updateParameter(param *api.Parameter) error {
 	return qs.Update("parameter", param.Id, param)
 }
 
-func (qs *queueStore) saveParameter(param *api.Parameter) error {
+func (qs *agentStore) saveParameter(param *api.Parameter) error {
 	_, err := qs.Insert("parameter", param)
 	return err
 }
 
-func (qs *queueStore) parameter(id string) (*api.Parameter, error) {
+func (qs *agentStore) parameter(id string) (*api.Parameter, error) {
 	param := new(api.Parameter)
 	err := qs.Get("parameter", id, param)
 	if err != nil {
@@ -49,11 +51,11 @@ func (qs *queueStore) parameter(id string) (*api.Parameter, error) {
 	return param, nil
 }
 
-func (qs *queueStore) deleteQueuedSeed(id string) error {
+func (qs *agentStore) deleteQueuedSeed(id string) error {
 	return qs.Delete("queue", id)
 }
 
-func (qs *queueStore) getNextToFetch(ctx context.Context) <-chan *api.QueuedSeed {
+func (qs *agentStore) getNextToFetch(ctx context.Context) <-chan *api.QueuedSeed {
 	out := make(chan *api.QueuedSeed)
 	go func() {
 		defer close(out)

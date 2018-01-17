@@ -6,27 +6,34 @@ import (
 
 	"github.com/nlnwa/sigridr/database"
 	"github.com/nlnwa/sigridr/types"
-	"fmt"
 )
 
 type jobStore struct {
 	*database.Rethink
+	*database.ConnectOpts
 }
 
 func newJobStore(c Config) *jobStore {
-	db := database.New()
-	db.ConnectOpts.Address = c.DatabaseAddress
-	db.ConnectOpts.Database = c.DatabaseName
-
-	fmt.Println("DatabaseName", c.DatabaseName)
-	return &jobStore{db}
+	return &jobStore{
+		Rethink: database.New(),
+		ConnectOpts: &database.ConnectOpts{
+			Address:  c.DatabaseAddress,
+			Database: c.DatabaseName,
+		},
+	}
 }
 
-func (js *jobStore) Connect() error {
-	return js.Rethink.Connect()
+func (js *jobStore) connect() error {
+	return js.Rethink.Connect(js.ConnectOpts)
 }
 
-func (js *jobStore) GetJobs() []types.Job {
+func (js *jobStore) disconnect() {
+	if err := js.Rethink.Disconnect(); err != nil {
+		log.WithError(err).Errorln("disconnecting from database")
+	}
+}
+
+func (js *jobStore) getJobs() []types.Job {
 	var jobs []types.Job
 
 	err := js.ListTable("job", &jobs)

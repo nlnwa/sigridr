@@ -1,50 +1,35 @@
-// Copyright © 2017 National Library of Norway
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package database
 
 import (
 	r "gopkg.in/gorethink/gorethink.v3"
 )
 
+type ConnectOpts = r.ConnectOpts
+
 type Rethink struct {
-	session     *r.Session
-	ConnectOpts *r.ConnectOpts
+	*r.Session
 }
 
 func New() *Rethink {
-	rethink := new(Rethink)
-	rethink.ConnectOpts = DefaultOptions()
-	return rethink
+	return new(Rethink)
 }
 
 func init() {
 	r.SetTags("gorethink", "json", "url")
 }
 
-func (db *Rethink) Connect() error {
+func (db *Rethink) Connect(opts *ConnectOpts) error {
 	var err error
-	db.session, err = r.Connect(*db.ConnectOpts)
+	db.Session, err = r.Connect(*opts)
 	return err
 }
 
-func (db *Rethink) Disconnect() {
-	db.session.Close()
+func (db *Rethink) Disconnect() error {
+	return db.Session.Close()
 }
 
 func (db *Rethink) DropDatabase(name string) error {
-	_, err := r.DBDrop(name).RunWrite(db.session)
+	_, err := r.DBDrop(name).RunWrite(db.Session)
 	if err != nil {
 		return err
 	}
@@ -52,7 +37,7 @@ func (db *Rethink) DropDatabase(name string) error {
 }
 
 func (db *Rethink) CreateDatabase(name string) error {
-	_, err := r.DBCreate(name).RunWrite(db.session)
+	_, err := r.DBCreate(name).RunWrite(db.Session)
 	if err != nil {
 		return err
 	}
@@ -60,7 +45,7 @@ func (db *Rethink) CreateDatabase(name string) error {
 }
 
 func (db *Rethink) DropTable(name string) error {
-	_, err := r.TableDrop(name).RunWrite(db.session)
+	_, err := r.TableDrop(name).RunWrite(db.Session)
 	if err != nil {
 		return err
 	}
@@ -68,7 +53,7 @@ func (db *Rethink) DropTable(name string) error {
 }
 
 func (db *Rethink) CreateTable(name string) error {
-	_, err := r.TableCreate(name).RunWrite(db.session)
+	_, err := r.TableCreate(name).RunWrite(db.Session)
 	if err != nil {
 		return err
 	}
@@ -76,7 +61,7 @@ func (db *Rethink) CreateTable(name string) error {
 }
 
 func (db *Rethink) Insert(table string, document interface{}) (string, error) {
-	res, err := r.Table(table).Insert(document).RunWrite(db.session)
+	res, err := r.Table(table).Insert(document).RunWrite(db.Session)
 	if err != nil {
 		return "", err
 	}
@@ -88,7 +73,7 @@ func (db *Rethink) Insert(table string, document interface{}) (string, error) {
 }
 
 func (db *Rethink) Update(table string, id string, value interface{}) error {
-	_, err := r.Table(table).Get(id).Update(value).RunWrite(db.session)
+	_, err := r.Table(table).Get(id).Update(value).RunWrite(db.Session)
 	if err != nil {
 		return err
 	}
@@ -96,20 +81,20 @@ func (db *Rethink) Update(table string, id string, value interface{}) error {
 }
 
 func (db *Rethink) Delete(table string, id string) error {
-	_, err := r.Table(table).Get(id).Delete().Run(db.session)
+	_, err := r.Table(table).Get(id).Delete().Run(db.Session)
 	return err
 }
 
 func (db *Rethink) Changes(name string) (*r.Cursor, error) {
-	return r.Table(name).Changes().Run(db.session)
+	return r.Table(name).Changes().Run(db.Session)
 }
 
 func (db *Rethink) Filter(table string, filterFunc interface{}) (*r.Cursor, error) {
-	return r.Table(table).Filter(filterFunc).Run(db.session)
+	return r.Table(table).Filter(filterFunc).Run(db.Session)
 }
 
 func (db *Rethink) Get(table string, id string, value interface{}) error {
-	cursor, err := r.Table(table).Get(id).Run(db.session)
+	cursor, err := r.Table(table).Get(id).Run(db.Session)
 	if err != nil {
 		return err
 	}
@@ -118,7 +103,7 @@ func (db *Rethink) Get(table string, id string, value interface{}) error {
 }
 
 func (db *Rethink) FetchOne(table string, value interface{}) error {
-	cursor, err := r.Table(table).Run(db.session)
+	cursor, err := r.Table(table).Run(db.Session)
 	if err != nil {
 		return err
 	}
@@ -127,7 +112,7 @@ func (db *Rethink) FetchOne(table string, value interface{}) error {
 }
 
 func (db *Rethink) GetCursor(name string) (*r.Cursor, error) {
-	cursor, err := r.Table(name).Run(db.session)
+	cursor, err := r.Table(name).Run(db.Session)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +120,7 @@ func (db *Rethink) GetCursor(name string) (*r.Cursor, error) {
 }
 
 func (db *Rethink) ListTable(name string, value interface{}) error {
-	cursor, err := r.Table(name).Run(db.session)
+	cursor, err := r.Table(name).Run(db.Session)
 	if err != nil {
 		return err
 	}

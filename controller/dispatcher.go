@@ -1,12 +1,12 @@
 package controller
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	"time"
 
-	"google.golang.org/grpc"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 
 	"github.com/nlnwa/sigridr/api"
 	"github.com/nlnwa/sigridr/types"
@@ -15,6 +15,10 @@ import (
 type agentClient struct {
 	address string
 	cc      *grpc.ClientConn
+}
+
+func newAgentClient(c Config) *agentClient {
+	return &agentClient{address: c.AgentAddress}
 }
 
 func (ac *agentClient) dial() (api.AgentClient, error) {
@@ -30,31 +34,23 @@ func (ac *agentClient) hangup() error {
 	return ac.cc.Close()
 }
 
-type dispatcher struct {
-	client *agentClient
-}
-
-func newDispatcher(c Config) *dispatcher {
-	return &dispatcher{&agentClient{address: c.AgentAddress}}
-}
-
-func (d *dispatcher) dispatch(job *types.Job, seed *types.Seed) {
+func (ac *agentClient) dispatch(job *types.Job, seed *types.Seed) {
 	request := api.DoJobRequest{
 		Job:  job.ToProto(),
 		Seed: seed.ToProto(),
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	client, err := d.client.dial()
+	agent, err := ac.dial()
 	if err != nil {
 		log.WithError(err).Errorln()
 	}
-	defer d.client.hangup()
+	defer ac.hangup()
 
-	_, err = client.Do(ctx, &request)
+	_, err = agent.Do(ctx, &request)
 	if err != nil {
 		log.WithError(err).Error()
 	} else {
-		log.WithField("seed", seed.Meta.Description).Debugln("Dispatch")
+		log.WithField("seed", seed.Meta.Description).Infoln("Start fetching")
 	}
 }

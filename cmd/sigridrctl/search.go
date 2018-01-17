@@ -1,17 +1,3 @@
-// Copyright © 2017 National Library of Norway
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package main
 
 import (
@@ -20,15 +6,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/mitchellh/go-homedir"
 	"golang.org/x/oauth2"
 
+	"github.com/nlnwa/sigridr/auth"
 	"github.com/nlnwa/sigridr/twitter"
 	"github.com/nlnwa/sigridr/twitter/ratelimit"
-	"github.com/nlnwa/sigridr/auth"
 )
 
 var (
@@ -128,12 +114,12 @@ func init() {
 
 	cobra.OnInitialize(initConfig)
 
-	searchCmd.Flags().IntVarP(&count, "count", "", 100, "Limit number of results (max is 100)")
-	searchCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "Config file (default is $HOME/.sigridr.yaml")
-	searchCmd.Flags().StringVarP(&consumerSecret, "consumer-secret", "s", "", "Consumer secret")
-	searchCmd.Flags().StringVarP(&consumerKey, "consumer-key", "k", "", "Consumer key")
-	searchCmd.Flags().StringVarP(&accessToken, "access-token", "a", "", "Access token")
-	searchCmd.Flags().BoolVar(&debug, "debug", false, "Enable debugging")
+	searchCmd.Flags().IntVarP(&count, "count", "", 100, "number of results")
+	searchCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.sigridr.yaml)")
+	searchCmd.Flags().StringVarP(&consumerSecret, "consumer-secret", "s", "", "consumer secret")
+	searchCmd.Flags().StringVarP(&consumerKey, "consumer-key", "k", "", "consumer key")
+	searchCmd.Flags().StringVarP(&accessToken, "access-token", "a", "", "access token")
+	searchCmd.Flags().BoolVar(&debug, "debug", false, "enable debugging output")
 
 	viper.BindPFlag("config", searchCmd.Flags().Lookup("config"))
 	viper.BindPFlag("consumer-secret", searchCmd.Flags().Lookup("consumer-secret"))

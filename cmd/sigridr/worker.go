@@ -39,8 +39,8 @@ func init() {
 
 	rootCmd.AddCommand(cmd)
 
-	cmd.Flags().Int("port", 10001, "Listening port")
-	cmd.Flags().String("access-token", "", "Twitter access token")
+	cmd.Flags().Int("port", 10001, "listening port")
+	cmd.Flags().String("access-token", "", "twitter access token")
 
 	workerViper.BindPFlag("port", cmd.Flags().Lookup("port"))
 	workerViper.BindPFlag("access-token", cmd.Flags().Lookup("access-token"))

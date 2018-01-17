@@ -6,12 +6,12 @@ import (
 )
 
 type dbCollector struct {
-	store      *jobStore
-	dispatcher *dispatcher
+	store       *jobStore
+	agentClient *agentClient
 }
 
 func NewDbCollector(c Config) cron.Collector {
-	return &dbCollector{newJobStore(c), newDispatcher(c)}
+	return &dbCollector{newJobStore(c), newAgentClient(c)}
 }
 
 // Collect jobs and schedule them with the scheduler
@@ -21,13 +21,13 @@ func (c *dbCollector) GetJobs() []*cron.Job {
 
 	jobs := make([]*cron.Job, 0)
 
-	err := c.store.Connect()
-	defer c.store.Disconnect()
+	err := c.store.connect()
+	defer c.store.disconnect()
 	if err != nil {
 		log.WithError(err).Errorln("Connecting to database")
 	}
 
-	for _, job := range c.store.GetJobs() {
+	for _, job := range c.store.getJobs() {
 		if job.Disabled {
 			log.WithField("job", job).Debugln("Job disabled")
 			continue
@@ -45,7 +45,7 @@ func (c *dbCollector) GetJobs() []*cron.Job {
 
 		// Add tasks to job
 		for i := range job.Seeds {
-			cronJob.AddTask(c.dispatcher.dispatch, &job, &job.Seeds[i])
+			cronJob.AddTask(c.agentClient.dispatch, &job, &job.Seeds[i])
 			nrOfSeeds++
 		}
 		jobs = append(jobs, cronJob)

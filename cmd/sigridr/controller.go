@@ -1,10 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"syscall"
 	"time"
-	"fmt"
 
 	cron "github.com/nlnwa/gocron"
 	log "github.com/sirupsen/logrus"
@@ -42,8 +42,8 @@ func init() {
 
 	rootCmd.AddCommand(cmd)
 
-	cmd.Flags().String("agent-host", "localhost", "Agent hostname")
-	cmd.Flags().Int("agent-port", 10000, "Agent port")
+	cmd.Flags().String("agent-host", "localhost", "agent hostname")
+	cmd.Flags().Int("agent-port", 10000, "agent port")
 
 	controllerViper.BindPFlag("agent-host", cmd.Flags().Lookup("agent-host"))
 	controllerViper.BindPFlag("agent-port", cmd.Flags().Lookup("agent-port"))

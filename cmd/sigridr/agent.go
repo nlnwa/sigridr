@@ -44,9 +44,9 @@ func init() {
 
 	rootCmd.AddCommand(cmd)
 
-	cmd.Flags().Int("port", 10000, "Server listening port")
-	cmd.Flags().String("worker-host", "localhost", "Worker hostname")
-	cmd.Flags().Int("worker-port", 10001, "Worker port")
+	cmd.Flags().Int("port", 10000, "server listening port")
+	cmd.Flags().String("worker-host", "localhost", "worker hostname")
+	cmd.Flags().Int("worker-port", 10001, "worker port")
 
 	agentViper.BindPFlag("port", cmd.Flags().Lookup("port"))
 	agentViper.BindPFlag("worker-host", cmd.Flags().Lookup("worker-host"))
@@ -82,7 +82,7 @@ func act(port int, workerHost string, workerPort int, dbHost string, dbPort int,
 	}()
 
 	go func() {
-		errc <- agent.QueueWorker(ctx, config)
+		errc <- agent.NewQueueWorker(config).Run(ctx)
 	}()
 
 	select {

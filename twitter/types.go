@@ -1,34 +1,36 @@
-package types
+package twitter
 
 import (
 	"strconv"
 
-	"github.com/nlnwa/sigridr/twitter"
+	"github.com/dghubble/go-twitter/twitter"
+
 	"github.com/nlnwa/sigridr/api"
+	"github.com/nlnwa/sigridr/types"
 )
 
-type Params struct {
-	*twitter.Params
-}
+type Metadata = twitter.SearchMetadata
+type Tweet = twitter.Tweet
+type Result = twitter.Search
+type Response = types.Response
+type Params twitter.SearchTweetParams
 
 func (p *Params) FromProto(parameter *api.Parameter) *Params {
 	sinceId, _ := strconv.ParseInt(parameter.SinceId, 10, 64)
 	maxId, _ := strconv.ParseInt(parameter.MaxId, 10, 64)
 
 	return &Params{
-		&twitter.Params{
-			Query:           parameter.Query,
-			Geocode:         parameter.Geocode,
-			Lang:            parameter.Geocode,
-			Locale:          parameter.Locale,
-			ResultType:      parameter.ResultType,
-			Count:           int(parameter.Count),
-			SinceID:         sinceId,
-			MaxID:           maxId,
-			Until:           parameter.Until,
-			IncludeEntities: &parameter.IncludeEntities,
-			TweetMode:       parameter.TweetMode,
-		},
+		Query:           parameter.Query,
+		Geocode:         parameter.Geocode,
+		Lang:            parameter.Geocode,
+		Locale:          parameter.Locale,
+		ResultType:      parameter.ResultType,
+		Count:           int(parameter.Count),
+		SinceID:         sinceId,
+		MaxID:           maxId,
+		Until:           parameter.Until,
+		IncludeEntities: &parameter.IncludeEntities,
+		TweetMode:       parameter.TweetMode,
 	}
 }
 
