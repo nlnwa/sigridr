@@ -9,8 +9,8 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-	"github.com/nlnwa/sigridr/worker"
 	"github.com/nlnwa/sigridr/api"
+	"github.com/nlnwa/sigridr/worker"
 )
 
 var workerViper = viper.New()
@@ -57,7 +57,7 @@ func work(dbHost string, dbPort int, dbName string, port int, accessToken string
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		return fmt.Errorf("listening on %s failed", port)
+		return fmt.Errorf("listening on %d failed", port)
 	} else {
 		log.WithField("port", port).Infoln("API server listening")
 	}

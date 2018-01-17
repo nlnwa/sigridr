@@ -2,14 +2,14 @@ package main
 
 import (
 	"context"
-	"net"
 	"fmt"
+	"net"
 	"syscall"
 
-	"google.golang.org/grpc"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 
 	"github.com/nlnwa/sigridr/agent"
 	"github.com/nlnwa/sigridr/api"
@@ -71,7 +71,7 @@ func act(port int, workerHost string, workerPort int, dbHost string, dbPort int,
 		errc <- func() error {
 			listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 			if err != nil {
-				return fmt.Errorf("listening on %s failed", port)
+				return fmt.Errorf("listening on %d failed", port)
 			} else {
 				log.WithField("port", port).Infoln("Agent API server listening")
 			}
