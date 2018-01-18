@@ -12,3 +12,6 @@
 
 # IDEA
 .idea
+
+# No vendoring in repo
+vendor

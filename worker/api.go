@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -9,9 +10,7 @@ import (
 
 	"github.com/nlnwa/sigridr/api"
 	"github.com/nlnwa/sigridr/auth"
-	"github.com/nlnwa/sigridr/database"
 	"github.com/nlnwa/sigridr/twitter"
-	"github.com/nlnwa/sigridr/types"
 	"github.com/nlnwa/sigridr/twitter/ratelimit"
 )
 
@@ -21,8 +20,7 @@ type Config struct {
 	DatabaseName    string
 }
 
-// result storage format
-type SearchResult struct {
+type searchResult struct {
 	Id         string            `json:"id,omitempty"`
 	CreateTime time.Time         `json:"create_time,omitempty"`
 	Seq        int32             `json:"seq,omitempty"`
@@ -34,42 +32,46 @@ type SearchResult struct {
 }
 
 type worker struct {
-	db     *database.Rethink
-	client *twitter.Client
+	store  *workerStore
+	client twitter.Client
 }
 
 func NewApi(c Config) api.WorkerServer {
 	httpClient := auth.HttpClient(c.AccessToken)
 	httpClient.Timeout = 10 * time.Second
 
-	db := database.New()
-	db.ConnectOpts.Address = c.DatabaseAddress
-	db.ConnectOpts.Database = c.DatabaseName
+	return &worker{
+		store:  newStore(c),
+		client: twitter.New(httpClient),
+	}
+}
 
-	return &worker{db, twitter.New(httpClient)}
+// parameters returns the parameters to be used in the request to twitter by
+// mixing default values with the parameters sent via the API.
+func parameters(parameter *api.Parameter) *twitter.Params {
+	p := &twitter.Params{
+		ResultType: "recent",
+		TweetMode:  "extended",
+		Count:      twitter.MaxStatusesPerRequest,
+		Query:      parameter.Query,
+	}
+
+	maxId, err := strconv.ParseInt(parameter.GetMaxId(), 10, 64)
+	if err == nil {
+		p.MaxID = maxId
+	}
+
+	sinceId, err := strconv.ParseInt(parameter.GetSinceId(), 10, 64)
+	if err == nil {
+		p.SinceID = sinceId
+	}
+	return p
 }
 
 func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkReply, error) {
 	queuedSeed := work.QueuedSeed
-
-	params := &twitter.Params{
-		ResultType: "recent",
-		TweetMode:  "extended",
-		Count:      twitter.MaxStatusesPerRequest,
-		Query:      queuedSeed.Parameter.Query,
-	}
-
-	maxId, err := strconv.ParseInt(queuedSeed.Parameter.GetMaxId(), 10, 64)
-	if err == nil {
-		params.MaxID = maxId
-	}
-
-	sinceId, err := strconv.ParseInt(queuedSeed.Parameter.GetSinceId(), 10, 64)
-	if err == nil {
-		params.SinceID = sinceId
-	}
-
 	now := time.Now().UTC()
+	params := parameters(queuedSeed.Parameter)
 
 	result, response, err := w.client.Search(params)
 	if err != nil {
@@ -86,19 +88,18 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 		}).Infoln("search")
 	}
 
-	search := &SearchResult{
+	search := &searchResult{
 		Seq:        queuedSeed.GetSeq(),
 		Ref:        queuedSeed.GetRef(),
 		CreateTime: now,
 		Metadata:   result.Metadata,
 		Statuses:   &result.Statuses,
 		Response:   response,
-		Params:     (&types.Params{Params: params}).ToProto(),
+		Params:     params.ToProto(),
 	}
-	id, err := w.saveSearchResult(search)
+	id, err := w.store.saveSearchResult(search)
 	if err != nil {
-		log.WithError(err).Errorln("saving search result")
-		return nil, err
+		return nil, fmt.Errorf("saving search result: %v", err)
 	}
 
 	if queuedSeed.GetSeq() == 0 {
@@ -122,13 +123,4 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 		RateLimit:  ratelimit.New().FromHttpHeaders(response.Header).ToProto(),
 	}, nil
 
-}
-
-func (w *worker) saveSearchResult(value interface{}) (string, error) {
-	err := w.db.Connect()
-	defer w.db.Disconnect()
-	if err != nil {
-		return "", err
-	}
-	return w.db.Insert("result", value)
 }

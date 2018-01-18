@@ -2,8 +2,8 @@ package agent
 
 import (
 	"context"
-	"time"
 	"fmt"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -14,11 +14,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var (
-	worker *workerClient
-	client api.WorkerClient
-	db     *queueStore
-)
+var client api.WorkerClient
 
 type workerClient struct {
 	address string
@@ -38,34 +34,47 @@ func (wc *workerClient) hangup() error {
 	return wc.cc.Close()
 }
 
-func QueueWorker(ctx context.Context, c Config) error {
-	timer := time.NewTimer(0)
-	db = newStore(c)
-	worker = &workerClient{address: c.WorkerAddress}
+type QueueWorker interface {
+	Run(context.Context) error
+}
 
+type queueWorker struct {
+	store  *agentStore
+	worker *workerClient
+}
+
+func NewQueueWorker(c Config) QueueWorker {
+	return &queueWorker{
+		store:  newStore(c),
+		worker: &workerClient{address: c.WorkerAddress},
+	}
+}
+
+func (qw *queueWorker) Run(ctx context.Context) error {
+	timer := time.NewTimer(0)
 	defer timer.Stop()
 
 	for {
 		// wait for timer or return if done
 		select {
 		case <-timer.C:
-			err := db.connect()
+			err := qw.store.connect()
 			if err != nil {
 				timer.Reset(time.Minute)
 				break
 			}
-			client, err = worker.dial()
+			client, err = qw.worker.dial()
 			if err != nil {
 				log.WithError(err).Errorln("failed to connect, will sleep and try again later")
 				timer.Reset(time.Minute)
 				break
 			}
-			for queuedSeed := range db.getNextToFetch(ctx) {
+			for queuedSeed := range qw.store.getNextToFetch(ctx) {
 				if queuedSeed == nil {
 					timer.Reset(time.Minute)
 					break
 				}
-				rateLimit, err := dispatch(ctx, queuedSeed)
+				rateLimit, err := qw.dispatch(ctx, queuedSeed)
 				if err != nil {
 					log.WithError(err).Errorln("dispatching queued seed")
 					timer.Reset(time.Minute)
@@ -83,8 +92,8 @@ func QueueWorker(ctx context.Context, c Config) error {
 					break
 				}
 			}
-			db.Disconnect()
-			worker.hangup()
+			qw.store.Disconnect()
+			qw.worker.hangup()
 		case <-ctx.Done():
 			return nil
 		}
@@ -92,11 +101,11 @@ func QueueWorker(ctx context.Context, c Config) error {
 }
 
 // dispatch sends work to the client
-func dispatch(ctx context.Context, queuedSeed *api.QueuedSeed) (*ratelimit.RateLimit, error) {
+func (qw *queueWorker) dispatch(ctx context.Context, queuedSeed *api.QueuedSeed) (*ratelimit.RateLimit, error) {
 	seq := queuedSeed.GetSeq()
 
 	if queuedSeed.Parameter.GetId() == "" {
-		param, err := db.parameter(queuedSeed.GetSeedId())
+		param, err := qw.store.parameter(queuedSeed.GetSeedId())
 		if err != nil {
 			return nil, err
 		}
@@ -116,7 +125,7 @@ func dispatch(ctx context.Context, queuedSeed *api.QueuedSeed) (*ratelimit.RateL
 	}
 
 	// remove seed from queue
-	err = db.deleteQueuedSeed(queuedSeed.Id)
+	err = qw.store.deleteQueuedSeed(queuedSeed.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +134,7 @@ func dispatch(ctx context.Context, queuedSeed *api.QueuedSeed) (*ratelimit.RateL
 	if reply.Count >= twitter.MaxStatusesPerRequest {
 		reply.QueuedSeed.Parameter.MaxId = reply.GetMaxId()
 		reply.QueuedSeed.Seq++
-		db.enqueueSeed(reply.QueuedSeed)
+		qw.store.enqueueSeed(reply.QueuedSeed)
 	}
 
 	// only save/update parameters if first in sequence
@@ -135,9 +144,9 @@ func dispatch(ctx context.Context, queuedSeed *api.QueuedSeed) (*ratelimit.RateL
 
 		if queuedSeed.Parameter.GetId() == "" {
 			queuedSeed.Parameter.Id = queuedSeed.GetSeedId()
-			err = db.saveParameter(queuedSeed.Parameter)
+			err = qw.store.saveParameter(queuedSeed.Parameter)
 		} else {
-			err = db.updateParameter(queuedSeed.Parameter)
+			err = qw.store.updateParameter(queuedSeed.Parameter)
 		}
 		if err != nil {
 			return nil, err

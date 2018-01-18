@@ -3,8 +3,8 @@ package types
 import (
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/golang/protobuf/ptypes"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/nlnwa/sigridr/api"
 )

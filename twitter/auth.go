@@ -2,11 +2,11 @@ package twitter
 
 import (
 	"context"
-
-	"golang.org/x/oauth2/clientcredentials"
-	"golang.org/x/oauth2"
-	"net/http"
 	"time"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
+	"net/http"
 )
 
 const Oauth2TokenUrl = "https://api.twitter.com/oauth2/token"
