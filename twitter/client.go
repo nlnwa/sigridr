@@ -23,9 +23,10 @@ func New(httpClient *http.Client) Client {
 // Search searches using Twitter's Search API
 func (l *lib) Search(params *Params) (*Result, *Response, error) {
 	p := twitter.SearchTweetParams(*params)
-	search, response, err := l.client.Search.Tweets(&p)
-	if err != nil {
+
+	if search, response, err := l.client.Search.Tweets(&p); err != nil {
 		return nil, nil, err
+	} else {
+		return search, new(Response).FromHttpResponse(response), nil
 	}
-	return search, new(Response).FromHttpResponse(response), nil
 }
