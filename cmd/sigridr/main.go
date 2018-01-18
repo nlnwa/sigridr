@@ -6,6 +6,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/nlnwa/sigridr/version"
 )
 
 var debug bool
@@ -14,6 +16,9 @@ var rootCmd = &cobra.Command{
 	Use:   "sigridrctl",
 	Short: "Twitter API client",
 	Long:  `Twitter API client`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		log.Infoln(version.String())
+	},
 }
 
 func init() {
