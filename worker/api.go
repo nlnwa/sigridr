@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/nlnwa/sigridr/auth"
 	"github.com/nlnwa/sigridr/twitter"
 	"github.com/nlnwa/sigridr/twitter/ratelimit"
-	"fmt"
 )
 
 type Config struct {
