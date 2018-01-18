@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -10,9 +9,9 @@ import (
 
 	"github.com/nlnwa/sigridr/api"
 	"github.com/nlnwa/sigridr/auth"
-	"github.com/nlnwa/sigridr/database"
 	"github.com/nlnwa/sigridr/twitter"
 	"github.com/nlnwa/sigridr/twitter/ratelimit"
+	"fmt"
 )
 
 type Config struct {
@@ -32,34 +31,6 @@ type searchResult struct {
 	Params     *api.Parameter    `json:"params,omitempty"`
 }
 
-type workerStore struct {
-	*database.Rethink
-	*database.ConnectOpts
-}
-
-func newStore(c Config) *workerStore {
-	return &workerStore{
-		Rethink: database.New(),
-		ConnectOpts: &database.ConnectOpts{
-			Database: c.DatabaseName,
-			Address:  c.DatabaseAddress,
-		},
-	}
-}
-
-func (ws *workerStore) saveSearchResult(value interface{}) (string, error) {
-	if err := ws.Connect(ws.ConnectOpts); err != nil {
-		return "", err
-	} else {
-		defer ws.Disconnect()
-	}
-	if id, err := ws.Insert("result", value); err != nil {
-		return "", fmt.Errorf("inserting search result into database: %v", err)
-	} else {
-		return id, nil
-	}
-}
-
 type worker struct {
 	store  *workerStore
 	client twitter.Client
@@ -75,27 +46,32 @@ func NewApi(c Config) api.WorkerServer {
 	}
 }
 
-func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkReply, error) {
-	queuedSeed := work.QueuedSeed
-
-	params := &twitter.Params{
+// parameters returns the parameters to be used in the request to twitter by
+// mixing default values with the parameters sent via the API.
+func parameters(parameter *api.Parameter) *twitter.Params {
+	p := &twitter.Params{
 		ResultType: "recent",
 		TweetMode:  "extended",
 		Count:      twitter.MaxStatusesPerRequest,
-		Query:      queuedSeed.Parameter.Query,
+		Query:      parameter.Query,
 	}
 
-	maxId, err := strconv.ParseInt(queuedSeed.Parameter.GetMaxId(), 10, 64)
+	maxId, err := strconv.ParseInt(parameter.GetMaxId(), 10, 64)
 	if err == nil {
-		params.MaxID = maxId
+		p.MaxID = maxId
 	}
 
-	sinceId, err := strconv.ParseInt(queuedSeed.Parameter.GetSinceId(), 10, 64)
+	sinceId, err := strconv.ParseInt(parameter.GetSinceId(), 10, 64)
 	if err == nil {
-		params.SinceID = sinceId
+		p.SinceID = sinceId
 	}
+	return p
+}
 
+func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkReply, error) {
+	queuedSeed := work.QueuedSeed
 	now := time.Now().UTC()
+	params := parameters(queuedSeed.Parameter)
 
 	result, response, err := w.client.Search(params)
 	if err != nil {
@@ -123,8 +99,7 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 	}
 	id, err := w.store.saveSearchResult(search)
 	if err != nil {
-		log.WithError(err).Errorln("saving search result")
-		return nil, err
+		return nil, fmt.Errorf("saving search result: %v", err)
 	}
 
 	if queuedSeed.GetSeq() == 0 {
