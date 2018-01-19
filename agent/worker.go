@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -10,43 +9,22 @@ import (
 	"github.com/nlnwa/sigridr/api"
 	"github.com/nlnwa/sigridr/twitter"
 	"github.com/nlnwa/sigridr/twitter/ratelimit"
-
-	"google.golang.org/grpc"
+	"github.com/nlnwa/sigridr/worker"
 )
-
-var client api.WorkerClient
-
-type workerClient struct {
-	address string
-	cc      *grpc.ClientConn
-}
-
-func (wc *workerClient) dial() (api.WorkerClient, error) {
-	conn, err := grpc.Dial(wc.address, grpc.WithInsecure())
-	if err != nil {
-		return nil, fmt.Errorf("dial: %v", err)
-	}
-	wc.cc = conn
-	return api.NewWorkerClient(conn), nil
-}
-
-func (wc *workerClient) hangup() error {
-	return wc.cc.Close()
-}
 
 type QueueWorker interface {
 	Run(context.Context) error
 }
 
 type queueWorker struct {
-	store  *agentStore
-	worker *workerClient
+	store        *agentStore
+	workerClient *worker.ApiClient
 }
 
 func NewQueueWorker(c Config) QueueWorker {
 	return &queueWorker{
-		store:  newStore(c),
-		worker: &workerClient{address: c.WorkerAddress},
+		store:        newStore(c),
+		workerClient: worker.NewApiClient(c.WorkerAddress),
 	}
 }
 
@@ -63,7 +41,7 @@ func (qw *queueWorker) Run(ctx context.Context) error {
 				timer.Reset(time.Minute)
 				break
 			}
-			client, err = qw.worker.dial()
+			err = qw.workerClient.Dial()
 			if err != nil {
 				log.WithError(err).Errorln("failed to connect, will sleep and try again later")
 				timer.Reset(time.Minute)
@@ -93,7 +71,7 @@ func (qw *queueWorker) Run(ctx context.Context) error {
 				}
 			}
 			qw.store.Disconnect()
-			qw.worker.hangup()
+			qw.workerClient.Hangup()
 		case <-ctx.Done():
 			return nil
 		}
@@ -114,12 +92,9 @@ func (qw *queueWorker) dispatch(ctx context.Context, queuedSeed *api.QueuedSeed)
 			queuedSeed.Parameter.SinceId = param.GetSinceId()
 		}
 	}
-	work := &api.WorkRequest{QueuedSeed: queuedSeed}
 
-	ctx, cancel := context.WithTimeout(ctx, time.Minute)
-	defer cancel()
-
-	reply, err := client.Do(ctx, work)
+	// call worker
+	reply, err := qw.workerClient.Do(ctx, queuedSeed)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +105,7 @@ func (qw *queueWorker) dispatch(ctx context.Context, queuedSeed *api.QueuedSeed)
 		return nil, err
 	}
 
-	// if possibly more to fetch enqueue next fetch
+	// enqueue next fetch if possibly more statuses to fetch
 	if reply.Count >= twitter.MaxStatusesPerRequest {
 		reply.QueuedSeed.Parameter.MaxId = reply.GetMaxId()
 		reply.QueuedSeed.Seq++
