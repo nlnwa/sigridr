@@ -106,7 +106,7 @@
   branch = "master"
   name = "github.com/nlnwa/gocron"
   packages = ["."]
-  revision = "94fe691259a72b2fcab609f1112d29c3a76150d8"
+  revision = "f3afa3b5e1f90b3b51d0d1a00111b546a23da81d"
 
 [[projects]]
   branch = "master"
@@ -120,8 +120,8 @@
 [[projects]]
   name = "github.com/pelletier/go-toml"
   packages = ["."]
-  revision = "16398bac157da96aa88f98a2df640c7f32af1da2"
-  version = "v1.0.1"
+  revision = "acdc4509485b587f5e675510c4f2c63e90ff68a8"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -175,7 +175,7 @@
     "pbkdf2",
     "ssh/terminal"
   ]
-  revision = "13931e22f9e72ea58bb73048bc752b48c6d4d4ac"
+  revision = "ee41a25c63fb5b74abf2213abb6dee3751e6ac4a"
 
 [[projects]]
   branch = "master"
