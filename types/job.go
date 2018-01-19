@@ -16,7 +16,6 @@ type Job struct {
 	ValidFrom      time.Time `json:"validFrom,omitempty"`
 	ValidTo        time.Time `json:"validTo,omitempty"`
 	Disabled       bool      `json:"disabled,omitempty"`
-	Seeds          []Seed    `json:"seeds,omitempty"`
 }
 
 func (j *Job) FromProto(job *api.Job) *Job {

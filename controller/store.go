@@ -36,18 +36,12 @@ func (js *jobStore) disconnect() {
 func (js *jobStore) getJobs() []types.Job {
 	var jobs []types.Job
 
-	err := js.ListTable("job", &jobs)
-	if err != nil {
+	if err := js.ListTable("job", &jobs); err != nil {
 		log.WithError(err).Error("Getting jobs from database")
 		return make([]types.Job, 0)
+	} else {
+		return jobs
 	}
-
-	// Add tasks to job
-	for i := range jobs {
-		jobs[i].Seeds = js.getSeeds(&jobs[i])
-	}
-
-	return jobs
 }
 
 func (js *jobStore) getSeeds(job *types.Job) []types.Seed {
