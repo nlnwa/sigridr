@@ -2,11 +2,12 @@ package twitter
 
 import (
 	"context"
+	"net/http"
 	"time"
 
+	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
-	"net/http"
 )
 
 const Oauth2TokenUrl = "https://api.twitter.com/oauth2/token"
@@ -22,5 +23,9 @@ func Oauth2Token(key string, secret string) (*oauth2.Token, error) {
 		ClientSecret: secret,
 		TokenURL:     Oauth2TokenUrl,
 	}
-	return config.Token(ctx)
+	if token, err := config.Token(ctx); err != nil {
+		return nil, errors.Wrap(err, "failed to fetch oauth2 token")
+	} else {
+		return token, nil
+	}
 }

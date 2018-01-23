@@ -1,34 +1,30 @@
 package worker
 
 import (
-	"fmt"
-
 	"github.com/nlnwa/sigridr/database"
 )
 
 type workerStore struct {
 	*database.Rethink
-	*database.ConnectOpts
 }
 
 func newStore(c Config) *workerStore {
+	db := database.New(database.WithAddress(c.DatabaseHost, c.DatabasePort), database.WithName(c.DatabaseName))
+	db.SetTags("json")
+
 	return &workerStore{
-		Rethink: database.New(),
-		ConnectOpts: &database.ConnectOpts{
-			Database: c.DatabaseName,
-			Address:  c.DatabaseAddress,
-		},
+		Rethink: db,
 	}
 }
 
 func (ws *workerStore) saveSearchResult(value interface{}) (string, error) {
-	if err := ws.Connect(ws.ConnectOpts); err != nil {
+	if err := ws.Connect(); err != nil {
 		return "", err
 	} else {
 		defer ws.Disconnect()
 	}
 	if id, err := ws.Insert("result", value); err != nil {
-		return "", fmt.Errorf("inserting search result into database: %v", err)
+		return "", err
 	} else {
 		return id, nil
 	}

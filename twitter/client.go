@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/dghubble/go-twitter/twitter"
+	"github.com/pkg/errors"
 )
 
 type Client interface {
@@ -25,7 +26,7 @@ func (l *lib) Search(params *Params) (*Result, *Response, error) {
 	p := twitter.SearchTweetParams(*params)
 
 	if search, response, err := l.client.Search.Tweets(&p); err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err, "failed to search twitter")
 	} else {
 		return search, new(Response).FromHttpResponse(response), nil
 	}

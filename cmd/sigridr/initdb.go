@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/nlnwa/sigridr/database"
@@ -21,7 +20,7 @@ var initDbCmd = &cobra.Command{
 		dbHost, dbPort, dbName := globalFlags()
 
 		if err := initDb(dbHost, dbPort, dbName); err != nil {
-			log.WithError(err).Fatal()
+			logger.Error(err.Error())
 		}
 	},
 }
@@ -31,19 +30,12 @@ func init() {
 }
 
 func initDb(dbHost string, dbPort int, dbName string) error {
-	log.WithFields(log.Fields{
-		"name": dbName,
-		"host": dbHost,
-		"port": dbPort,
-	}).Infoln("Initializing database")
+	logger.Info("Initializing database", "dbHost", dbHost, "dbPort", dbPort, "dbName", dbName)
 
-	db := database.New()
-	opts := &database.ConnectOpts{
-		Database: dbName,
-		Address:  fmt.Sprintf("%s:%d", dbHost, dbPort),
-	}
-	if err := db.Connect(opts); err != nil {
-		return fmt.Errorf("connecting to database %s:%d: %v", dbHost, dbPort, err)
+	db := database.New(database.WithAddress(dbHost, dbPort), database.WithName(dbName))
+
+	if err := db.Connect(); err != nil {
+		return err
 	}
 	defer db.Disconnect()
 
@@ -52,12 +44,16 @@ func initDb(dbHost string, dbPort int, dbName string) error {
 	tables := []string{"result", "job", "entity", "seed", "queue", "parameter"}
 
 	if err := db.CreateDatabase(dbName); err != nil {
-		return fmt.Errorf("creating database `%s`: %v", dbName, err)
+		return err
+	} else {
+		logger.Info("Created database", "name", dbName)
 	}
 
 	for _, table := range tables {
 		if err := db.CreateTable(table); err != nil {
-			return fmt.Errorf("creating database table `%s`: %v", table, err)
+			return err
+		} else {
+			logger.Info("Created table", "name", table)
 		}
 	}
 
@@ -79,6 +75,8 @@ func initDb(dbHost string, dbPort int, dbName string) error {
 
 	if _, err := db.Insert("job", job); err != nil {
 		return fmt.Errorf("inserting job %s: %v", job.Meta.Name, err)
+	} else {
+		logger.Info("Inserted job", "name", job.Meta.Name, "cron", job.CronExpression)
 	}
 
 	return nil

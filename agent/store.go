@@ -3,29 +3,23 @@ package agent
 import (
 	"context"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/nlnwa/sigridr/api"
 	"github.com/nlnwa/sigridr/database"
 )
 
 type agentStore struct {
 	*database.Rethink
-	*database.ConnectOpts
 }
 
 func newStore(c Config) *agentStore {
-	return &agentStore{
-		Rethink: database.New(),
-		ConnectOpts: &database.ConnectOpts{
-			Database: c.DatabaseName,
-			Address:  c.DatabaseAddress,
-		},
-	}
+	db := database.New(database.WithAddress(c.DatabaseHost, c.DatabasePort), database.WithName(c.DatabaseName))
+	db.SetTags("json")
+
+	return &agentStore{db}
 }
 
 func (qs *agentStore) connect() error {
-	return qs.Rethink.Connect(qs.ConnectOpts)
+	return qs.Rethink.Connect()
 }
 
 func (qs *agentStore) enqueueSeed(queuedSeed *api.QueuedSeed) error {
@@ -44,36 +38,41 @@ func (qs *agentStore) saveParameter(param *api.Parameter) error {
 
 func (qs *agentStore) parameter(id string) (*api.Parameter, error) {
 	param := new(api.Parameter)
-	err := qs.Get("parameter", id, param)
-	if err != nil {
+	if err := qs.Get("parameter", id, param); err != nil {
 		return nil, err
+	} else {
+		return param, nil
 	}
-	return param, nil
 }
 
 func (qs *agentStore) deleteQueuedSeed(id string) error {
 	return qs.Delete("queue", id)
 }
 
-func (qs *agentStore) getNextToFetch(ctx context.Context) <-chan *api.QueuedSeed {
+func (qs *agentStore) getNextToFetch(ctx context.Context) (<-chan *api.QueuedSeed, <-chan error) {
 	out := make(chan *api.QueuedSeed)
+	errc := make(chan error)
 	go func() {
 		defer close(out)
+		defer close(errc)
 
 		cursor, err := qs.GetCursor("queue")
-		defer cursor.Close()
 		if err != nil {
-			log.WithError(err).Errorln("failed getting cursor to seed queue")
-			out <- nil
+			errc <- err
 			return
 		}
+		defer cursor.Close()
+
 		for {
 			queuedSeed := new(api.QueuedSeed)
 			if ok := cursor.Next(queuedSeed); !ok {
 				if err = cursor.Err(); err != nil {
-					log.WithError(err).Errorln("failed getting next row in seed queue")
+					errc <- err
+					return
+				} else {
+					out <- nil
+					return
 				}
-				queuedSeed = nil
 			}
 
 			// return if done else send next to fetch on channel
@@ -81,11 +80,9 @@ func (qs *agentStore) getNextToFetch(ctx context.Context) <-chan *api.QueuedSeed
 			case <-ctx.Done():
 				return
 			case out <- queuedSeed:
-				if queuedSeed == nil {
-					return
-				}
+				break
 			}
 		}
 	}()
-	return out
+	return out, errc
 }

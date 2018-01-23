@@ -1,24 +1,25 @@
 package main
 
 import (
+	"os"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/inconshreveable/log15"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/nlnwa/sigridr/logfmt"
 	"github.com/nlnwa/sigridr/version"
 )
 
 var debug bool
 
+var logger = log.New()
+
 var rootCmd = &cobra.Command{
 	Use:   "sigridrctl",
 	Short: "Twitter API client",
 	Long:  `Twitter API client`,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		log.Infoln(version.String())
-	},
 }
 
 func init() {
@@ -49,10 +50,16 @@ func globalFlags() (dbHost string, dbPort int, dbName string) {
 }
 
 func main() {
+	logHandler := log.CallerFuncHandler(log.StreamHandler(os.Stdout, logfmt.LogbackFormat()))
 	if debug {
-		log.SetLevel(log.DebugLevel)
+		logger.SetHandler(log.CallerStackHandler("%+v", logHandler))
+	} else {
+		logger.SetHandler(log.LvlFilterHandler(log.LvlInfo, logHandler))
 	}
+	logger.Info(version.String())
+
 	if err := rootCmd.Execute(); err != nil {
-		log.WithError(err).Fatal()
+		logger.Error(err.Error())
+		os.Exit(1)
 	}
 }

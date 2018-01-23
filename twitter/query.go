@@ -3,22 +3,24 @@ package twitter
 import (
 	"net/url"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 func SinceId(metadata *Metadata) (string, error) {
 	refreshUrl := strings.TrimPrefix(metadata.RefreshURL, "?")
-	m, err := url.ParseQuery(refreshUrl)
-	if err != nil {
-		return "", err
+	if m, err := url.ParseQuery(refreshUrl); err != nil {
+		return "", errors.Wrap(err, "failed to parse URL querystring")
+	} else {
+		return m.Get("since_id"), nil
 	}
-	return m.Get("since_id"), nil
 }
 
 func MaxId(metadata *Metadata) (string, error) {
 	nextResults := strings.TrimPrefix(metadata.NextResults, "?")
-	m, err := url.ParseQuery(nextResults)
-	if err != nil {
-		return "", err
+	if m, err := url.ParseQuery(nextResults); err != nil {
+		return "", errors.Wrap(err, "failed to parse URL querystring")
+	} else {
+		return m.Get("max_id"), nil
 	}
-	return m.Get("max_id"), nil
 }

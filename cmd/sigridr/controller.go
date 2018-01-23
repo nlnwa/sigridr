@@ -7,7 +7,6 @@ import (
 	"time"
 
 	cron "github.com/nlnwa/gocron"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -27,7 +26,7 @@ var controllerCmd = &cobra.Command{
 		agentPort := controllerViper.GetInt("agent-port")
 
 		if err := control(dbHost, dbPort, dbName, agentHost, agentPort); err != nil {
-			log.WithError(err).Error()
+			logger.Error(err.Error())
 			os.Exit(2)
 		}
 	},
@@ -51,9 +50,11 @@ func init() {
 
 func control(dbHost string, dbPort int, dbName string, agentHost string, agentPort int) error {
 	config := controller.Config{
-		AgentAddress:    fmt.Sprintf("%s:%d", agentHost, agentPort),
-		DatabaseName:    dbName,
-		DatabaseAddress: fmt.Sprintf("%s:%d", dbHost, dbPort),
+		AgentAddress: fmt.Sprintf("%s:%d", agentHost, agentPort),
+		DatabaseName: dbName,
+		DatabaseHost: dbHost,
+		DatabasePort: dbPort,
+		Logger:       logger,
 	}
 
 	scheduler := cron.NewScheduler()
@@ -66,7 +67,7 @@ func control(dbHost string, dbPort int, dbName string, agentHost string, agentPo
 	scheduler.Start()
 	defer scheduler.Stop()
 
-	log.WithField("interval", time.Minute).Infoln("Scheduler running")
+	logger.Info("Scheduler running", "interval", time.Minute)
 
 	<-signal.Receive(syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	return nil

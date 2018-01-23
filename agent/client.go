@@ -2,9 +2,9 @@ package agent
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	"github.com/nlnwa/sigridr/api"
@@ -23,7 +23,7 @@ func NewApiClient(address string) *Client {
 
 func (ac *Client) Dial() (err error) {
 	if ac.cc, err = grpc.Dial(ac.address, grpc.WithInsecure()); err != nil {
-		return fmt.Errorf("dial: %v", err)
+		return errors.Wrapf(err, "failed to dial: %s", ac.address)
 	} else {
 		ac.agentClient = api.NewAgentClient(ac.cc)
 		return
@@ -35,14 +35,22 @@ func (ac *Client) Hangup() error {
 }
 
 func (ac *Client) Do(job *types.Job, seed *types.Seed) error {
+	j, err := job.ToProto()
+	if err != nil {
+		return err
+	}
+	s, err := seed.ToProto()
+	if err != nil {
+		return err
+	}
 	request := api.DoJobRequest{
-		Job:  job.ToProto(),
-		Seed: seed.ToProto(),
+		Job:  j,
+		Seed: s,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	_, err := ac.agentClient.Do(ctx, &request)
+	_, err = ac.agentClient.Do(ctx, &request)
 	return err
 }

@@ -2,12 +2,10 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/mitchellh/go-homedir"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
@@ -32,13 +30,12 @@ var searchCmd = &cobra.Command{
 	Long:  `Query Twitter's Search API`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := search(cmd, args); err != nil {
-			log.WithError(err).Error()
-			os.Exit(2)
+			panic(err)
 		}
 	},
 }
 
-func search(cmd *cobra.Command, args []string) error {
+func search(_ *cobra.Command, args []string) error {
 	query := strings.Join(args, " ")
 
 	params := &twitter.Params{
@@ -61,49 +58,32 @@ func search(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed searching twitter: %v", err)
 	}
 
-	if log.GetLevel() == log.DebugLevel {
-		log.WithFields(log.Fields{
-			"Protocol":   response.Protocol,
-			"Status":     response.Status,
-			"StatusCode": response.Code,
-		}).Debugln("Response")
+	if debug {
+		fmt.Printf("Response:\n\tProtocol=%s\n\tStatus=%s\n\tCode=%d\n",
+			response.Protocol,
+			response.Status,
+			response.Code)
 
 		// HTTP Headers
+		fmt.Println("HTTP headers:")
 		for k, v := range response.Header {
 			switch k {
 			default:
-				log.WithField(k, v).Debugln("HTTP Header")
+				fmt.Printf("\t%s=%s\n", k, v)
 			}
 		}
-
-		// Twitter Search API Metadata
-		log.WithFields(log.Fields{
-			"Count":       result.Metadata.Count,
-			"SinceID":     result.Metadata.SinceID,
-			"SinceIDStr":  result.Metadata.SinceIDStr,
-			"MaxID":       result.Metadata.MaxID,
-			"MaxIDStr":    result.Metadata.MaxIDStr,
-			"RefreshURL":  result.Metadata.RefreshURL,
-			"NextResults": result.Metadata.NextResults,
-			"CompletedIn": result.Metadata.CompletedIn,
-			"Query":       result.Metadata.Query,
-		}).Debugln("Metadata")
+		fmt.Printf("Metadata:\n\t%+v\n", result.Metadata)
 
 		// Rate limits
-		rl := ratelimit.New().FromHttpHeaders(response.Header)
-		log.WithFields(log.Fields{
-			"limit":     rl.Limit,
-			"remaining": rl.Remaining,
-			"reset":     rl.Reset,
-		}).Debugln("Rate limit")
+		if rl, err := ratelimit.New().FromHttpHeaders(response.Header); err != nil {
+			return err
+		} else {
+			fmt.Printf("Ratelimit:\n\tlimit=%d\n\tremaining=%d\n\treset=%s\n", rl.Limit, rl.Remaining, rl.Reset)
+		}
 	}
 
 	for index, tweet := range result.Statuses {
-		log.WithFields(log.Fields{
-			"n":        index,
-			"fullText": tweet.FullText,
-			"id":       tweet.ID,
-		}).Println("Status")
+		fmt.Printf("\n%3d: %s\n", index+1, tweet.FullText)
 	}
 
 	return nil
@@ -129,14 +109,10 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if debug {
-		log.SetLevel(log.DebugLevel)
-	}
-
 	// Find home directory.
 	home, err := homedir.Dir()
 	if err != nil {
-		log.WithError(err).Fatal()
+		panic(err)
 	}
 
 	if cfgFile != "" {
@@ -153,10 +129,12 @@ func initConfig() {
 
 	// If a config file is found, read it
 	if err := viper.ReadInConfig(); err == nil {
-		log.WithFields(log.Fields{"path": viper.ConfigFileUsed()}).Debugln("using configuration file")
-
-		for _, key := range viper.AllKeys() {
-			log.WithField(key, viper.Get(key)).Debugln("Configuration value")
+		if debug {
+			fmt.Printf("Using configuration file %s", viper.ConfigFileUsed())
+			fmt.Println("Config:")
+			for _, key := range viper.AllKeys() {
+				fmt.Printf("\t%s=%v\n", key, viper.Get(key))
+			}
 		}
 	} else {
 		// no config file found - set default config file
@@ -167,7 +145,7 @@ func initConfig() {
 	if ck, cs := viper.GetString("consumer-key"), viper.GetString("consumer-secret"); ck != "" && cs != "" {
 		token, err := twitter.Oauth2Token(ck, cs)
 		if err != nil {
-			log.WithError(err).Fatal()
+			panic(err)
 		}
 		viper.Set("token", token)
 		writeConfig()

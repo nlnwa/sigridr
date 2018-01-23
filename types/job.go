@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
-	log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 
 	"github.com/nlnwa/sigridr/api"
 )
@@ -18,42 +18,48 @@ type Job struct {
 	Disabled       bool      `json:"disabled,omitempty"`
 }
 
-func (j *Job) FromProto(job *api.Job) *Job {
+func (j *Job) FromProto(job *api.Job) (*Job, error) {
 	validTo, err := ptypes.Timestamp(job.ValidTo)
 	if err != nil {
-		log.WithError(err).Error()
+		return nil, err
 	}
 	validFrom, err := ptypes.Timestamp(job.ValidFrom)
 	if err != nil {
-		log.WithError(err).Error()
+		return nil, errors.Wrap(err, "failed to convert from proto timestamp to time")
 	}
 	j.Id = job.Id
-	j.Meta = new(Meta).FromProto(job.Meta)
+	if j.Meta, err = new(Meta).FromProto(job.Meta); err != nil {
+		return nil, errors.Wrap(err, "failed to convert from proto timestamp to time")
+	}
 	j.CronExpression = job.CronExpression
 	j.ValidTo = validTo
 	j.ValidFrom = validFrom
 	j.Disabled = job.Disabled
 
-	return j
+	return j, nil
 }
 
-func (j *Job) ToProto() *api.Job {
+func (j *Job) ToProto() (*api.Job, error) {
 	validTo, err := ptypes.TimestampProto(j.ValidTo)
 	if err != nil {
-		log.WithError(err).Error()
+		return nil, err
 	}
 	validFrom, err := ptypes.TimestampProto(j.ValidFrom)
 	if err != nil {
-		log.WithError(err).Error()
+		return nil, errors.Wrap(err, "failed to convert from time to proto timestamp")
+	}
+	meta, err := j.Meta.ToProto()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert from time to proto timestamp")
 	}
 	return &api.Job{
 		Id:             j.Id,
-		Meta:           j.Meta.ToProto(),
+		Meta:           meta,
 		CronExpression: j.CronExpression,
 		ValidTo:        validTo,
 		ValidFrom:      validFrom,
 		Disabled:       j.Disabled,
-	}
+	}, nil
 
 }
 

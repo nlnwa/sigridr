@@ -1,7 +1,13 @@
 package agent
 
+import (
+	"github.com/nlnwa/sigridr/log"
+)
+
 type Config struct {
-	WorkerAddress   string
-	DatabaseAddress string
-	DatabaseName    string
+	WorkerAddress string
+	DatabaseHost  string
+	DatabasePort  int
+	DatabaseName  string
+	Logger        log.Logger
 }

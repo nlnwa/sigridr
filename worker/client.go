@@ -2,9 +2,9 @@ package worker
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	"github.com/nlnwa/sigridr/api"
@@ -22,7 +22,7 @@ func NewApiClient(address string) *ApiClient {
 
 func (c *ApiClient) Dial() (err error) {
 	if c.cc, err = grpc.Dial(c.address, grpc.WithInsecure()); err != nil {
-		return fmt.Errorf("dial: %v", err)
+		return errors.Wrapf(err, "failed to dial: %s", c.address)
 	} else {
 		c.workerClient = api.NewWorkerClient(c.cc)
 		return

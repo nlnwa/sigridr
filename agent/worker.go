@@ -4,9 +4,8 @@ import (
 	"context"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/nlnwa/sigridr/api"
+	"github.com/nlnwa/sigridr/log"
 	"github.com/nlnwa/sigridr/twitter"
 	"github.com/nlnwa/sigridr/twitter/ratelimit"
 	"github.com/nlnwa/sigridr/worker"
@@ -19,12 +18,14 @@ type QueueWorker interface {
 type queueWorker struct {
 	store        *agentStore
 	workerClient *worker.ApiClient
+	log.Logger
 }
 
 func NewQueueWorker(c Config) QueueWorker {
 	return &queueWorker{
 		store:        newStore(c),
 		workerClient: worker.NewApiClient(c.WorkerAddress),
+		Logger:       c.Logger,
 	}
 }
 
@@ -33,48 +34,63 @@ func (qw *queueWorker) Run(ctx context.Context) error {
 	defer timer.Stop()
 
 	for {
+
 		// wait for timer or return if done
+	timer:
 		select {
 		case <-timer.C:
+			sleep := time.Minute
+
 			err := qw.store.connect()
 			if err != nil {
-				timer.Reset(time.Minute)
-				break
+				qw.Error("failed to connect to store", "error", err, "sleep", sleep.String())
+				timer.Reset(sleep)
+				break timer
 			}
 			err = qw.workerClient.Dial()
 			if err != nil {
-				log.WithError(err).Errorln("failed to connect, will sleep and try again later")
+				qw.Error("failed to connect to worker", "error", err, "sleep", sleep.String())
 				timer.Reset(time.Minute)
-				break
+				break timer
 			}
-			for queuedSeed := range qw.store.getNextToFetch(ctx) {
-				if queuedSeed == nil {
-					timer.Reset(time.Minute)
-					break
-				}
-				rateLimit, err := qw.dispatch(ctx, queuedSeed)
-				if err != nil {
-					log.WithError(err).Errorln("dispatching queued seed")
-					timer.Reset(time.Minute)
-					break
-				}
-				log.WithFields(log.Fields{
-					"remaining": rateLimit.Remaining,
-					"reset":     rateLimit.Reset,
-					"timeout":   rateLimit.Timeout(),
-				}).Debugln("Ratelimit")
 
-				// stop fetching if ratelimit reached
-				if rateLimit.Remaining < 1 {
-					timer.Reset(rateLimit.Timeout() + 5*time.Second)
-					break
+			out, errc := qw.store.getNextToFetch(ctx)
+			for {
+				select {
+				case queuedSeed := <-out:
+					if queuedSeed == nil {
+						timer.Reset(sleep)
+						break timer
+					}
+					rateLimit, err := qw.dispatch(ctx, queuedSeed)
+					if err != nil {
+						qw.Error("failed to dispatch queued seed", "error", err, "sleep", sleep.String())
+						timer.Reset(sleep)
+						break timer
+					}
+					qw.Debug("Ratelimit",
+						"remaining", rateLimit.Remaining,
+						"reset", rateLimit.Reset,
+						"timeout", rateLimit.Timeout())
+
+					if rateLimit.Remaining < 1 {
+						sleep = rateLimit.Timeout() + 5*time.Second
+						qw.Info("Ratelimit reached", "sleep", sleep.String())
+						timer.Reset(sleep)
+						break timer
+					}
+				case err := <-errc:
+					qw.Error("failed fetching next queued seed", "error", err)
+					timer.Reset(time.Minute * 10)
+					break timer
 				}
+
 			}
-			qw.store.Disconnect()
-			qw.workerClient.Hangup()
 		case <-ctx.Done():
 			return nil
 		}
+		qw.store.Disconnect()
+		qw.workerClient.Hangup()
 	}
 }
 
@@ -100,8 +116,7 @@ func (qw *queueWorker) dispatch(ctx context.Context, queuedSeed *api.QueuedSeed)
 	}
 
 	// remove seed from queue
-	err = qw.store.deleteQueuedSeed(queuedSeed.Id)
-	if err != nil {
+	if err = qw.store.deleteQueuedSeed(queuedSeed.Id); err != nil {
 		return nil, err
 	}
 
@@ -128,5 +143,5 @@ func (qw *queueWorker) dispatch(ctx context.Context, queuedSeed *api.QueuedSeed)
 		}
 	}
 
-	return new(ratelimit.RateLimit).FromProto(reply.RateLimit), nil
+	return new(ratelimit.RateLimit).FromProto(reply.RateLimit)
 }

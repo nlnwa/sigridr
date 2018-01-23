@@ -32,6 +32,12 @@
   version = "v1.0.0"
 
 [[projects]]
+  name = "github.com/go-stack/stack"
+  packages = ["."]
+  revision = "259ab82a6cad3992b4e21ff5cac294ccb06474bc"
+  version = "v1.7.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = [
@@ -42,7 +48,7 @@
     "ptypes/empty",
     "ptypes/timestamp"
   ]
-  revision = "1e59b77b52bf8e4b449a57e6f79f21226d571845"
+  revision = "c65a0412e71e8b9b3bfd22925720d23c0f054237"
 
 [[projects]]
   branch = "master"
@@ -79,6 +85,12 @@
   revision = "23c074d0eceb2b8a5bfdbb271ab780cde70f05a8"
 
 [[projects]]
+  name = "github.com/inconshreveable/log15"
+  packages = ["."]
+  revision = "0decfc6c20d9ca0ad143b0e89dcaa20f810b4fb3"
+  version = "v2.13"
+
+[[projects]]
   name = "github.com/inconshreveable/mousetrap"
   packages = ["."]
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
@@ -89,6 +101,18 @@
   packages = ["."]
   revision = "d419a98cdbed11a922bf76f257b7c4be79b50e73"
   version = "v1.7.4"
+
+[[projects]]
+  name = "github.com/mattn/go-colorable"
+  packages = ["."]
+  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
+  version = "v0.0.9"
+
+[[projects]]
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
+  version = "v0.0.3"
 
 [[projects]]
   branch = "master"
@@ -122,6 +146,12 @@
   packages = ["."]
   revision = "acdc4509485b587f5e675510c4f2c63e90ff68a8"
   version = "v1.1.0"
+
+[[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -175,7 +205,7 @@
     "pbkdf2",
     "ssh/terminal"
   ]
-  revision = "ee41a25c63fb5b74abf2213abb6dee3751e6ac4a"
+  revision = "3d37316aaa6bd9929127ac9a527abf408178ea7b"
 
 [[projects]]
   branch = "master"
@@ -209,7 +239,7 @@
     "unix",
     "windows"
   ]
-  revision = "2c42eef0765b9837fbdab12011af7830f55f88f0"
+  revision = "af50095a40f9041b3b38960738837185c26e9419"
 
 [[projects]]
   branch = "master"
@@ -278,8 +308,8 @@
     "tap",
     "transport"
   ]
-  revision = "7cea4cc846bcf00cbb27595b07da5de875ef7de9"
-  version = "v1.9.1"
+  revision = "6b51017f791ae1cfbec89c52efdf444b13b550ef"
+  version = "v1.9.2"
 
 [[projects]]
   name = "gopkg.in/fatih/pool.v2"
@@ -307,6 +337,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3a05813ac352b46297f005c31cc91cf9aef044a2d71c418f448d07c78c7a5ffe"
+  inputs-digest = "68ab223d2d77db564fdb7a8c949329f67a87eb4a0aba9050182b0bee939ae24c"
   solver-name = "gps-cdcl"
   solver-version = 1

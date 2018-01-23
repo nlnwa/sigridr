@@ -9,7 +9,7 @@ import (
 var Version = "was not built properly"
 
 func String() string {
-	return fmt.Sprintf(`Sigridr version: %s, Go version: %s, Go OS/ARCH: %s %s`,
+	return fmt.Sprintf(`Version: %s, Go version: %s, Go OS/ARCH: %s %s`,
 		Version,
 		runtime.Version(),
 		runtime.GOOS,

@@ -2,82 +2,88 @@ package controller
 
 import (
 	cron "github.com/nlnwa/gocron"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/nlnwa/sigridr/agent"
+	"github.com/nlnwa/sigridr/log"
 	"github.com/nlnwa/sigridr/types"
 )
 
 type dbCollector struct {
 	store  *jobStore
 	runner *jobRunner
+	log.Logger
 }
 
 func NewDbCollector(c Config) cron.Collector {
-	return &dbCollector{newJobStore(c), newJobRunner(c)}
+	return &dbCollector{newJobStore(c), newJobRunner(c), c.Logger}
 }
 
 // Collect jobs and schedule them with the scheduler
 func (c *dbCollector) GetJobs() []*cron.Job {
-	jobs := make([]*cron.Job, 0)
+	cronJobs := make([]*cron.Job, 0)
 
 	if err := c.store.connect(); err != nil {
-		log.WithError(err).Errorln("Connecting to database")
-		return jobs
+		c.Error("failed to connect to database", "error", err)
+		return cronJobs
 	}
 	defer c.store.disconnect()
 
-	for _, job := range c.store.getJobs() {
+	jobs, err := c.store.getJobs()
+	if err != nil {
+		c.Info("failed getting jobs from store", "error", err)
+		return cronJobs
+	}
+	for _, job := range jobs {
 		if job.Disabled {
-			log.WithField("job", job).Debugln("Job disabled")
+			c.Info("Job disabled", "job", job.Meta.Name)
 			continue
 		}
 		if !job.IsValid() {
-			log.WithField("job", job).Debugln("Job not valid")
+			c.Info("Job not valid", "name", job.Meta.Name, "validFrom", job.ValidFrom.String(), "validTo", job.ValidTo.String())
 			continue
 		}
 
 		cronJob, err := cron.NewCronJob(job.CronExpression)
 		if err != nil {
-			log.WithError(err).Error()
+			c.Error("failed to create new cron job", "error", err)
 			continue
 		}
-
-		if log.GetLevel() == log.DebugLevel {
-			log.WithFields(log.Fields{
-				"cron": job.CronExpression,
-				"name": job.Meta.Name,
-			}).Debugln("Collect job")
-		}
+		c.Debug("Collect job",
+			"cron", job.CronExpression,
+			"name", job.Meta.Name)
 
 		cronJob.AddTask(c.runner.execute, &job)
-		jobs = append(jobs, cronJob)
+		cronJobs = append(cronJobs, cronJob)
 	}
 
-	return jobs
+	return cronJobs
 }
 
 type jobRunner struct {
 	store       *jobStore
 	agentClient *agent.Client
+	log.Logger
 }
 
 func newJobRunner(c Config) *jobRunner {
-	return &jobRunner{newJobStore(c), agent.NewApiClient(c.AgentAddress)}
+	return &jobRunner{newJobStore(c), agent.NewApiClient(c.AgentAddress), c.Logger}
 }
 
 func (jr *jobRunner) execute(job *types.Job) {
-	log.WithField("name", job.Meta.Name).Infoln("Running job")
+	jr.Info("Running job", "name", job.Meta.Name)
 
 	// connect db
 	if err := jr.store.connect(); err != nil {
-		log.WithError(err).Errorln("connecting to database")
+		jr.Info("failed connecting to database")
 		return
 	}
 	// get seeds of job
-	seeds := jr.store.getSeeds(job)
-	jr.store.disconnect()
-
+	seeds, err := jr.store.getSeeds(job)
+	defer jr.store.disconnect()
+	if err != nil {
+		jr.Error("failed getting seeds from store", "error", err.Error())
+		return
+	}
 	// connect agent
 	if len(seeds) > 0 {
 		jr.agentClient.Dial()
@@ -89,10 +95,8 @@ func (jr *jobRunner) execute(job *types.Job) {
 		if seeds[i].Meta.Name == "" {
 			continue
 		}
-		log.WithFields(log.Fields{
-			"handle": seeds[i].Meta.Description,
-			"query":  seeds[i].Meta.Name,
-		}).Infoln("Dispatch")
-		jr.agentClient.Do(job, &seeds[i])
+		if err := jr.agentClient.Do(job, &seeds[i]); err != nil {
+			jr.Error("failed to call agent client method: Do")
+		}
 	}
 }

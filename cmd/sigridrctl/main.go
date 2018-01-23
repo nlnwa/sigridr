@@ -15,6 +15,7 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
+	log.SetFormatter(&log.TextFormatter{DisableTimestamp: true})
 	if err := rootCmd.Execute(); err != nil {
 		log.WithError(err).Fatal()
 	}

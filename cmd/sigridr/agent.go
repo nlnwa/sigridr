@@ -6,7 +6,6 @@ import (
 	"net"
 	"syscall"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -30,7 +29,7 @@ var agentCmd = &cobra.Command{
 		workerHost := agentViper.GetString("worker-host")
 
 		if err := act(port, workerHost, workerPort, dbHost, dbPort, dbName); err != nil {
-			log.WithError(err).Fatal()
+			logger.Error(err.Error())
 		}
 	},
 }
@@ -55,9 +54,11 @@ func init() {
 
 func act(port int, workerHost string, workerPort int, dbHost string, dbPort int, dbName string) error {
 	config := agent.Config{
-		WorkerAddress:   fmt.Sprintf("%s:%d", workerHost, workerPort),
-		DatabaseAddress: fmt.Sprintf("%s:%d", dbHost, dbPort),
-		DatabaseName:    dbName,
+		WorkerAddress: fmt.Sprintf("%s:%d", workerHost, workerPort),
+		DatabaseHost:  dbHost,
+		DatabasePort:  dbPort,
+		DatabaseName:  dbName,
+		Logger:        logger,
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -73,7 +74,7 @@ func act(port int, workerHost string, workerPort int, dbHost string, dbPort int,
 			if err != nil {
 				return fmt.Errorf("listening on %d failed", port)
 			} else {
-				log.WithField("port", port).Infoln("Agent API server listening")
+				logger.Info("API server listening", "port", port)
 			}
 			server = grpc.NewServer(grpcOpts...)
 			api.RegisterAgentServer(server, agent.NewApi(config))
@@ -92,12 +93,12 @@ func act(port int, workerHost string, workerPort int, dbHost string, dbPort int,
 		cancel()
 		// wait for QueueWorker to finish what it is doing
 		if err := <-errc; err != nil {
-			log.WithError(err).Error()
+			logger.Error(err.Error())
 		}
 		// stop gRPC server and wait for it to finish
 		server.GracefulStop()
 		if err := <-errc; err != nil {
-			log.WithError(err).Error()
+			logger.Error(err.Error())
 		}
 	}
 	return nil

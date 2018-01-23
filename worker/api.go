@@ -2,22 +2,24 @@ package worker
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 
 	"github.com/nlnwa/sigridr/api"
 	"github.com/nlnwa/sigridr/auth"
+	"github.com/nlnwa/sigridr/log"
 	"github.com/nlnwa/sigridr/twitter"
 	"github.com/nlnwa/sigridr/twitter/ratelimit"
 )
 
 type Config struct {
-	AccessToken     string
-	DatabaseAddress string
-	DatabaseName    string
+	AccessToken  string
+	DatabaseHost string
+	DatabasePort int
+	DatabaseName string
+	Logger       log.Logger
 }
 
 type searchResult struct {
@@ -34,6 +36,7 @@ type searchResult struct {
 type worker struct {
 	store  *workerStore
 	client twitter.Client
+	log.Logger
 }
 
 func NewApi(c Config) api.WorkerServer {
@@ -43,6 +46,7 @@ func NewApi(c Config) api.WorkerServer {
 	return &worker{
 		store:  newStore(c),
 		client: twitter.New(httpClient),
+		Logger: c.Logger,
 	}
 }
 
@@ -75,17 +79,16 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 
 	result, response, err := w.client.Search(params)
 	if err != nil {
-		log.WithError(err).Errorln("searching twitter")
 		return nil, err
 	} else {
-		log.WithFields(log.Fields{
-			"query":   params.Query,
-			"ref":     queuedSeed.GetRef(),
-			"seq":     queuedSeed.GetSeq(),
-			"maxId":   queuedSeed.GetParameter().GetMaxId(),
-			"sinceId": queuedSeed.GetParameter().GetSinceId(),
-			"tweets":  len(result.Statuses),
-		}).Infoln("search")
+		w.Logger.Info("Search",
+			"thread", "gRPC",
+			"query", params.Query,
+			"ref", queuedSeed.GetRef(),
+			"seq", queuedSeed.GetSeq(),
+			"maxId", queuedSeed.GetParameter().GetMaxId(),
+			"sinceId", queuedSeed.GetParameter().GetSinceId(),
+			"tweets", len(result.Statuses))
 	}
 
 	search := &searchResult{
@@ -99,7 +102,7 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 	}
 	id, err := w.store.saveSearchResult(search)
 	if err != nil {
-		return nil, fmt.Errorf("saving search result: %v", err)
+		return nil, errors.Wrap(err, "failed to save search result")
 	}
 
 	if queuedSeed.GetSeq() == 0 {
@@ -115,12 +118,20 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 		return nil, err
 	}
 
+	rl, err := ratelimit.New().FromHttpHeaders(response.Header)
+	if err != nil {
+		return nil, err
+	}
+	rlProto, err := rl.ToProto()
+	if err != nil {
+		return nil, err
+	}
 	return &api.WorkReply{
 		QueuedSeed: queuedSeed,
 		Count:      int32(len(result.Statuses)),
 		MaxId:      maxIdStr,
 		SinceId:    sinceIdStr,
-		RateLimit:  ratelimit.New().FromHttpHeaders(response.Header).ToProto(),
+		RateLimit:  rlProto,
 	}, nil
 
 }

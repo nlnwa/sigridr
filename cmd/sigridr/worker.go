@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -25,7 +25,8 @@ var workerCmd = &cobra.Command{
 		accessToken := workerViper.GetString("access-token")
 
 		if err := work(dbHost, dbPort, dbName, port, accessToken); err != nil {
-			log.WithError(err).Fatal()
+			logger.Error(err.Error())
+			os.Exit(1)
 		}
 	},
 }
@@ -48,9 +49,11 @@ func init() {
 
 func work(dbHost string, dbPort int, dbName string, port int, accessToken string) error {
 	apiConfig := worker.Config{
-		AccessToken:     accessToken,
-		DatabaseAddress: fmt.Sprintf("%s:%d", dbHost, dbPort),
-		DatabaseName:    dbName,
+		AccessToken:  accessToken,
+		DatabaseHost: dbHost,
+		DatabasePort: dbPort,
+		DatabaseName: dbName,
+		Logger:       logger,
 	}
 
 	var grpcOpts []grpc.ServerOption
@@ -59,7 +62,7 @@ func work(dbHost string, dbPort int, dbName string, port int, accessToken string
 	if err != nil {
 		return fmt.Errorf("listening on %d failed", port)
 	} else {
-		log.WithField("port", port).Infoln("API server listening")
+		logger.Info("API server listening", "port", port)
 	}
 	server := grpc.NewServer(grpcOpts...)
 	api.RegisterWorkerServer(server, worker.NewApi(apiConfig))

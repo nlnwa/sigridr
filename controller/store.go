@@ -1,7 +1,7 @@
 package controller
 
 import (
-	log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 	r "gopkg.in/gorethink/gorethink.v3"
 
 	"github.com/nlnwa/sigridr/database"
@@ -10,52 +10,45 @@ import (
 
 type jobStore struct {
 	*database.Rethink
-	*database.ConnectOpts
 }
 
 func newJobStore(c Config) *jobStore {
-	return &jobStore{
-		Rethink: database.New(),
-		ConnectOpts: &database.ConnectOpts{
-			Address:  c.DatabaseAddress,
-			Database: c.DatabaseName,
-		},
-	}
+	db := database.New(database.WithAddress(c.DatabaseHost, c.DatabasePort), database.WithName(c.DatabaseName))
+	db.SetTags("json")
+
+	return &jobStore{db}
 }
 
 func (js *jobStore) connect() error {
-	return js.Rethink.Connect(js.ConnectOpts)
+	return js.Rethink.Connect()
 }
 
-func (js *jobStore) disconnect() {
-	if err := js.Rethink.Disconnect(); err != nil {
-		log.WithError(err).Errorln("disconnecting from database")
-	}
+func (js *jobStore) disconnect() error {
+	return js.Rethink.Disconnect()
 }
 
-func (js *jobStore) getJobs() []types.Job {
+func (js *jobStore) getJobs() ([]types.Job, error) {
 	var jobs []types.Job
 
 	if err := js.ListTable("job", &jobs); err != nil {
-		log.WithError(err).Error("Getting jobs from database")
-		return make([]types.Job, 0)
+		return nil, err
 	} else {
-		return jobs
+		return jobs, nil
 	}
 }
 
-func (js *jobStore) getSeeds(job *types.Job) []types.Seed {
+func (js *jobStore) getSeeds(job *types.Job) ([]types.Seed, error) {
 	var seeds []types.Seed
 
 	cursor, err := js.Filter("seed", func(seed r.Term) r.Term {
 		return seed.Field("jobId").Contains(job.Id)
 	})
 	if err != nil {
-		log.WithError(err).Errorln("Getting seeds with jobId from database")
+		return nil, err
 	}
-	err = cursor.All(&seeds)
-	if err != nil {
-		log.WithError(err).Errorln("Getting seeds with jobId from database")
+	if err = cursor.All(&seeds); err != nil {
+		return nil, errors.Wrap(err, "failed to get all seeds from cursor")
+	} else {
+		return seeds, nil
 	}
-	return seeds
 }

@@ -12,22 +12,30 @@ type Seed struct {
 	Disabled bool     `json:"disabled,omitempty"`
 }
 
-func (s *Seed) ToProto() *api.Seed {
+func (s *Seed) ToProto() (*api.Seed, error) {
+	meta, err := s.Meta.ToProto()
+	if err != nil {
+		return nil, err
+	}
 	return &api.Seed{
 		Id:       s.Id,
-		Meta:     s.Meta.ToProto(),
+		Meta:     meta,
 		EntityId: s.EntityId,
 		JobId:    s.JobId,
 		Disabled: s.Disabled,
-	}
+	}, nil
 }
 
-func (s *Seed) FromProto(seed *api.Seed) *Seed {
+func (s *Seed) FromProto(seed *api.Seed) (*Seed, error) {
+	meta, err := new(Meta).FromProto(seed.Meta)
+	if err != nil {
+		return nil, err
+	}
 	s.Id = seed.Id
-	s.Meta = new(Meta).FromProto(seed.Meta)
+	s.Meta = meta
 	s.EntityId = seed.EntityId
 	s.JobId = seed.JobId
 	s.Disabled = seed.Disabled
 
-	return s
+	return s, nil
 }
