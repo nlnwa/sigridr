@@ -95,14 +95,7 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 	if err != nil {
 		return nil, err
 	} else {
-		w.Logger.Info("Search",
-			"thread", "gRPC",
-			"query", params.Query,
-			"ref", queuedSeed.GetRef(),
-			"seq", queuedSeed.GetSeq(),
-			"maxId", queuedSeed.GetParameter().GetMaxId(),
-			"sinceId", queuedSeed.GetParameter().GetSinceId(),
-			"tweets", len(result.Statuses))
+		w.Logger.Info("Search", "query", params.Query, "tweets", len(result.Statuses))
 	}
 
 	search := &searchResult{
