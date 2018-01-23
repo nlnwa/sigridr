@@ -12,29 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package twitter
+package main
 
 import (
-	"net/url"
-	"strings"
+	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
+	"github.com/nlnwa/sigridr/version"
 )
 
-func SinceId(metadata *Metadata) (string, error) {
-	refreshUrl := strings.TrimPrefix(metadata.RefreshURL, "?")
-	if m, err := url.ParseQuery(refreshUrl); err != nil {
-		return "", errors.Wrap(err, "failed to parse URL querystring")
-	} else {
-		return m.Get("since_id"), nil
-	}
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print version",
+	Long:  `Print version`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println(version.String())
+	},
 }
 
-func MaxId(metadata *Metadata) (string, error) {
-	nextResults := strings.TrimPrefix(metadata.NextResults, "?")
-	if m, err := url.ParseQuery(nextResults); err != nil {
-		return "", errors.Wrap(err, "failed to parse URL querystring")
-	} else {
-		return m.Get("max_id"), nil
-	}
+func init() {
+	rootCmd.AddCommand(versionCmd)
 }

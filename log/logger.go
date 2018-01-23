@@ -12,17 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signal
+package log
 
-import (
-	"os"
-	"os/signal"
-)
-
-func Receive(sigs ...os.Signal) <-chan os.Signal {
-	sigc := make(chan os.Signal, 1)
-
-	signal.Notify(sigc, sigs...)
-
-	return sigc
+type Logger interface {
+	Debug(string, ...interface{})
+	Info(string, ...interface{})
+	Error(string, ...interface{})
 }

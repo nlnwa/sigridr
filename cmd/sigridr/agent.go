@@ -1,3 +1,17 @@
+// Copyright 2018 National Library of Norway
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -6,7 +20,6 @@ import (
 	"net"
 	"syscall"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -30,7 +43,7 @@ var agentCmd = &cobra.Command{
 		workerHost := agentViper.GetString("worker-host")
 
 		if err := act(port, workerHost, workerPort, dbHost, dbPort, dbName); err != nil {
-			log.WithError(err).Fatal()
+			logger.Error(err.Error())
 		}
 	},
 }
@@ -55,9 +68,11 @@ func init() {
 
 func act(port int, workerHost string, workerPort int, dbHost string, dbPort int, dbName string) error {
 	config := agent.Config{
-		WorkerAddress:   fmt.Sprintf("%s:%d", workerHost, workerPort),
-		DatabaseAddress: fmt.Sprintf("%s:%d", dbHost, dbPort),
-		DatabaseName:    dbName,
+		WorkerAddress: fmt.Sprintf("%s:%d", workerHost, workerPort),
+		DatabaseHost:  dbHost,
+		DatabasePort:  dbPort,
+		DatabaseName:  dbName,
+		Logger:        logger,
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -73,7 +88,7 @@ func act(port int, workerHost string, workerPort int, dbHost string, dbPort int,
 			if err != nil {
 				return fmt.Errorf("listening on %d failed", port)
 			} else {
-				log.WithField("port", port).Infoln("Agent API server listening")
+				logger.Info("API server listening", "port", port)
 			}
 			server = grpc.NewServer(grpcOpts...)
 			api.RegisterAgentServer(server, agent.NewApi(config))
@@ -92,12 +107,12 @@ func act(port int, workerHost string, workerPort int, dbHost string, dbPort int,
 		cancel()
 		// wait for QueueWorker to finish what it is doing
 		if err := <-errc; err != nil {
-			log.WithError(err).Error()
+			logger.Error(err.Error())
 		}
 		// stop gRPC server and wait for it to finish
 		server.GracefulStop()
 		if err := <-errc; err != nil {
-			log.WithError(err).Error()
+			logger.Error(err.Error())
 		}
 	}
 	return nil

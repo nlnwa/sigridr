@@ -1,10 +1,24 @@
+// Copyright 2018 National Library of Norway
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
 	"fmt"
 	"net"
+	"os"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -25,7 +39,8 @@ var workerCmd = &cobra.Command{
 		accessToken := workerViper.GetString("access-token")
 
 		if err := work(dbHost, dbPort, dbName, port, accessToken); err != nil {
-			log.WithError(err).Fatal()
+			logger.Error(err.Error())
+			os.Exit(1)
 		}
 	},
 }
@@ -48,9 +63,11 @@ func init() {
 
 func work(dbHost string, dbPort int, dbName string, port int, accessToken string) error {
 	apiConfig := worker.Config{
-		AccessToken:     accessToken,
-		DatabaseAddress: fmt.Sprintf("%s:%d", dbHost, dbPort),
-		DatabaseName:    dbName,
+		AccessToken:  accessToken,
+		DatabaseHost: dbHost,
+		DatabasePort: dbPort,
+		DatabaseName: dbName,
+		Logger:       logger,
 	}
 
 	var grpcOpts []grpc.ServerOption
@@ -59,7 +76,7 @@ func work(dbHost string, dbPort int, dbName string, port int, accessToken string
 	if err != nil {
 		return fmt.Errorf("listening on %d failed", port)
 	} else {
-		log.WithField("port", port).Infoln("API server listening")
+		logger.Info("API server listening", "port", port)
 	}
 	server := grpc.NewServer(grpcOpts...)
 	api.RegisterWorkerServer(server, worker.NewApi(apiConfig))

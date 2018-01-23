@@ -1,24 +1,39 @@
+// Copyright 2018 National Library of Norway
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
+	"os"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/inconshreveable/log15"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/nlnwa/sigridr/logfmt"
 	"github.com/nlnwa/sigridr/version"
 )
 
 var debug bool
 
+var logger = log.New()
+
 var rootCmd = &cobra.Command{
 	Use:   "sigridrctl",
 	Short: "Twitter API client",
 	Long:  `Twitter API client`,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		log.Infoln(version.String())
-	},
 }
 
 func init() {
@@ -49,10 +64,16 @@ func globalFlags() (dbHost string, dbPort int, dbName string) {
 }
 
 func main() {
+	logHandler := log.CallerFuncHandler(log.StreamHandler(os.Stdout, logfmt.LogbackFormat()))
 	if debug {
-		log.SetLevel(log.DebugLevel)
+		logger.SetHandler(log.CallerStackHandler("%+v", logHandler))
+	} else {
+		logger.SetHandler(log.LvlFilterHandler(log.LvlInfo, logHandler))
 	}
+	logger.Info(version.String())
+
 	if err := rootCmd.Execute(); err != nil {
-		log.WithError(err).Fatal()
+		logger.Error(err.Error())
+		os.Exit(1)
 	}
 }

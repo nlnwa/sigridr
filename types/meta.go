@@ -1,10 +1,24 @@
+// Copyright 2018 National Library of Norway
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package types
 
 import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
-	log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 
 	"github.com/nlnwa/sigridr/api"
 )
@@ -19,18 +33,18 @@ type Meta struct {
 	Label          []*Label  `json:"label,omitempty"`
 }
 
-func (m *Meta) ToProto() *api.Meta {
+func (m *Meta) ToProto() (*api.Meta, error) {
 	label := make([]*api.Label, 0)
 	for _, l := range m.Label {
 		label = append(label, l.ToProto())
 	}
 	created, err := ptypes.TimestampProto(m.Created)
 	if err != nil {
-		log.WithError(err).Error()
+		return nil, errors.Wrap(err, "failed to convert from time to proto timestamp")
 	}
 	lastModified, err := ptypes.TimestampProto(m.LastModified)
 	if err != nil {
-		log.WithError(err).Error()
+		return nil, errors.Wrap(err, "failed to convert from time to proto timestamp")
 	}
 
 	return &api.Meta{
@@ -41,10 +55,10 @@ func (m *Meta) ToProto() *api.Meta {
 		LastModified:   lastModified,
 		LastModifiedBy: m.LastModifiedBy,
 		Label:          label,
-	}
+	}, nil
 }
 
-func (m *Meta) FromProto(meta *api.Meta) *Meta {
+func (m *Meta) FromProto(meta *api.Meta) (*Meta, error) {
 	m.Name = meta.Name
 	m.Description = meta.Description
 	m.CreatedBy = meta.CreatedBy
@@ -58,15 +72,15 @@ func (m *Meta) FromProto(meta *api.Meta) *Meta {
 
 	created, err := ptypes.Timestamp(meta.Created)
 	if err != nil {
-		log.WithError(err).Error()
+		return nil, errors.Wrap(err, "failed to convert from proto timestamp to time")
 	}
 	m.Created = created
 
 	lastModified, err := ptypes.Timestamp(meta.LastModified)
 	if err != nil {
-		log.WithError(err).Error()
+		return nil, errors.Wrap(err, "failed to convert from proto timestamp to time")
 	}
 	m.LastModified = lastModified
 
-	return m
+	return m, nil
 }
