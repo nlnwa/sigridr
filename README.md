@@ -1,12 +1,12 @@
 # Sigríðr
 
-A Twitter API client.
+A golang Twitter Search API client/harvester.
 
 ### Usage
 
 First time with consumer key and consumer secret (after which the access token is stored in a config file `~/.sigridr.yaml`):
 ```
-./sigridr -k <consumer key> -s <consumer secret> search from:nasjonalbibl
+./sigridrctl -k <consumer key> -s <consumer secret> search from:nasjonalbibl
 ```
 
 Access token provided as environment variable:
@@ -16,14 +16,14 @@ ACCESS_TOKEN=<access token> ./sigridr search from:nasjonalbibl
 
 With filters (no replies and no retweets):
 ```
-./sigridr search from:nasjonalbibl -- -filter:replies -filter:retweets
+./sigridrctl search from:nasjonalbibl -- -filter:replies -filter:retweets
 ```
 
 ## Development
 
 ### Build
 ```
-go build -o sigridr
+go install ./...
 ```
 
 ### Compiling protocol buffers (with gRPC)
