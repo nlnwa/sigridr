@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
+	"github.com/nlnwa/sigridr/version"
 )
 
 var versionCmd = &cobra.Command{
@@ -9,7 +12,7 @@ var versionCmd = &cobra.Command{
 	Short: "Print version",
 	Long:  `Print version`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// do nothing
+		fmt.Println(version.String())
 	},
 }
 
