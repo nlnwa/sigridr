@@ -9,12 +9,10 @@ FROM alpine:3.4
 
 RUN apk add --no-cache --update ca-certificates
 
-COPY --from=0 /go/bin/sigridr /go/bin/sigridrctl /usr/local/bin/
+COPY --from=0 /go/bin/sigridr /usr/local/bin/
 
 WORKDIR /
 
 ENTRYPOINT ["sigridr"]
-
-CMD ["version"]
 
 EXPOSE 10000 10001
