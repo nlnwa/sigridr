@@ -142,6 +142,15 @@
   revision = "193c4ffac87e155d62784cd70967e303707c16c1"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/nlnwa/pkg"
+  packages = [
+    "log",
+    "logfmt"
+  ]
+  revision = "6cd5e7c5a7682bf6a2ed622a721a6caa4b062c84"
+
+[[projects]]
   name = "github.com/pelletier/go-toml"
   packages = ["."]
   revision = "acdc4509485b587f5e675510c4f2c63e90ff68a8"
@@ -337,6 +346,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e210324644c65084f8682fd6ec516df2034a9dc2b0d5984d3d29ad062e57ff8e"
+  inputs-digest = "d172c105ffe07e391989e6963a1f37e954963ef0779b999be7d20745bf971db9"
   solver-name = "gps-cdcl"
   solver-version = 1
