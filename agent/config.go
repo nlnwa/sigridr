@@ -15,7 +15,7 @@
 package agent
 
 import (
-	"github.com/nlnwa/sigridr/log"
+	"github.com/nlnwa/pkg/log"
 )
 
 type Config struct {

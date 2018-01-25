@@ -18,8 +18,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/nlnwa/pkg/log"
 	"github.com/nlnwa/sigridr/api"
-	"github.com/nlnwa/sigridr/log"
 	"github.com/nlnwa/sigridr/twitter"
 	"github.com/nlnwa/sigridr/twitter/ratelimit"
 	"github.com/nlnwa/sigridr/worker"

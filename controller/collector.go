@@ -17,8 +17,8 @@ package controller
 import (
 	cron "github.com/nlnwa/gocron"
 
+	"github.com/nlnwa/pkg/log"
 	"github.com/nlnwa/sigridr/agent"
-	"github.com/nlnwa/sigridr/log"
 	"github.com/nlnwa/sigridr/types"
 )
 
