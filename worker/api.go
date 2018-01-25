@@ -19,8 +19,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/nlnwa/pkg/log"
 	"github.com/nlnwa/sigridr/api"
 	"github.com/nlnwa/sigridr/auth"
@@ -37,14 +35,14 @@ type Config struct {
 }
 
 type searchResult struct {
-	Id         string            `json:"id,omitempty"`
-	CreateTime time.Time         `json:"create_time,omitempty"`
-	Seq        int32             `json:"seq,omitempty"`
-	Ref        string            `json:"ref,omitempty"`
-	Metadata   *twitter.Metadata `json:"search_metadata,omitempty"`
-	Statuses   *[]twitter.Tweet  `json:"statuses,omitempty"`
-	Response   *twitter.Response `json:"response,omitempty"`
-	Params     *api.Parameter    `json:"params,omitempty"`
+	Id          string            `json:"id,omitempty"`
+	CreateTime  time.Time         `json:"create_time,omitempty"`
+	Seq         int32             `json:"seq,omitempty"`
+	ExecutionId string            `json:"execution_id,omitempty"`
+	Metadata    *twitter.Metadata `json:"search_metadata,omitempty"`
+	Statuses    *[]twitter.Tweet  `json:"statuses,omitempty"`
+	Response    *twitter.Response `json:"response,omitempty"`
+	Params      *api.Parameter    `json:"params,omitempty"`
 }
 
 type worker struct {
@@ -95,50 +93,57 @@ func (w *worker) Do(context context.Context, work *api.WorkRequest) (*api.WorkRe
 	if err != nil {
 		return nil, err
 	} else {
-		w.Logger.Info("Search", "query", params.Query, "tweets", len(result.Statuses))
+		w.Logger.Debug("Search", "query", params.Query)
 	}
 
-	search := &searchResult{
-		Seq:        queuedSeed.GetSeq(),
-		Ref:        queuedSeed.GetRef(),
-		CreateTime: now,
-		Metadata:   result.Metadata,
-		Statuses:   &result.Statuses,
-		Response:   response,
-		Params:     params.ToProto(),
-	}
-	id, err := w.store.saveSearchResult(search)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to save search result")
-	}
-
-	if queuedSeed.GetSeq() == 0 {
-		queuedSeed.Ref = id
-	}
-
-	maxIdStr, err := twitter.MaxId(search.Metadata)
-	if err != nil {
-		return nil, err
-	}
-	sinceIdStr, err := twitter.SinceId(search.Metadata)
-	if err != nil {
-		return nil, err
-	}
-
+	// Rate limit
 	rl, err := ratelimit.New().FromHttpHeaders(response.Header)
 	if err != nil {
 		return nil, err
 	}
-	rlProto, err := rl.ToProto()
+	rateLimit, err := rl.ToProto()
+	if err != nil {
+		return nil, err
+	}
+	// number of statuses
+	count := int32(len(result.Statuses))
+
+	// don't save result if no statuses
+	if count == 0 {
+		return &api.WorkReply{
+			QueuedSeed: queuedSeed,
+			Count:      count,
+			RateLimit:  rateLimit,
+		}, nil
+	} else {
+		// save search result
+		search := &searchResult{
+			Seq:         queuedSeed.GetSeq(),
+			CreateTime:  now,
+			Metadata:    result.Metadata,
+			Statuses:    &result.Statuses,
+			ExecutionId: queuedSeed.GetExecutionId(),
+			Response:    response,
+			Params:      params.ToProto(),
+		}
+		if _, err = w.store.saveSearchResult(search); err != nil {
+			return nil, err
+		}
+	}
+	maxIdStr, err := twitter.MaxId(result.Metadata)
+	if err != nil {
+		return nil, err
+	}
+	sinceIdStr, err := twitter.SinceId(result.Metadata)
 	if err != nil {
 		return nil, err
 	}
 	return &api.WorkReply{
 		QueuedSeed: queuedSeed,
-		Count:      int32(len(result.Statuses)),
+		Count:      count,
 		MaxId:      maxIdStr,
 		SinceId:    sinceIdStr,
-		RateLimit:  rlProto,
+		RateLimit:  rateLimit,
 	}, nil
 
 }
