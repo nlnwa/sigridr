@@ -47,6 +47,7 @@ func initDb(dbHost string, dbPort int, dbName string) error {
 	logger.Info("Initializing database", "dbHost", dbHost, "dbPort", dbPort, "dbName", dbName)
 
 	db := database.New(database.WithAddress(dbHost, dbPort), database.WithName(dbName))
+	db.SetTags("json")
 
 	if err := db.Connect(); err != nil {
 		return err
@@ -55,7 +56,7 @@ func initDb(dbHost string, dbPort int, dbName string) error {
 
 	now := time.Now().UTC()
 
-	tables := []string{"result", "job", "entity", "seed", "queue", "parameter"}
+	tables := []string{"result", "job", "entity", "seed", "queue", "parameter", "execution"}
 
 	if err := db.CreateDatabase(dbName); err != nil {
 		return err

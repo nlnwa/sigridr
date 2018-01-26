@@ -44,16 +44,16 @@ func (c *dbCollector) GetJobs() []*cron.Job {
 
 	jobs, err := c.store.getJobs()
 	if err != nil {
-		c.Info("failed getting jobs from store", "error", err)
+		c.Error("failed getting jobs from store", "error", err)
 		return cronJobs
 	}
 	for _, job := range jobs {
 		if job.Disabled {
-			c.Info("Job disabled", "job", job.Meta.Name)
+			c.Debug("Job disabled", "job", job.Meta.Name)
 			continue
 		}
 		if !job.IsValid() {
-			c.Info("Job not valid", "name", job.Meta.Name, "validFrom", job.ValidFrom.String(), "validTo", job.ValidTo.String())
+			c.Debug("Job not valid", "name", job.Meta.Name, "validFrom", job.ValidFrom.String(), "validTo", job.ValidTo.String())
 			continue
 		}
 
@@ -110,7 +110,7 @@ func (jr *jobRunner) execute(job *types.Job) {
 			continue
 		}
 		if err := jr.agentClient.Do(job, &seeds[i]); err != nil {
-			jr.Error("failed to call agent client method: Do")
+			jr.Error("failed to call agent client method: Do", "err", err)
 		}
 	}
 }

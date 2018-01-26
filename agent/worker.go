@@ -103,7 +103,7 @@ func (qw *queueWorker) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		}
-		qw.store.Disconnect()
+		qw.store.disconnect()
 		qw.workerClient.Hangup()
 	}
 }
@@ -123,9 +123,18 @@ func (qw *queueWorker) dispatch(ctx context.Context, queuedSeed *api.QueuedSeed)
 		}
 	}
 
+	s, err := qw.store.status(queuedSeed.GetExecutionId())
+	if err != nil {
+		return nil, err
+	}
+	if _, err := qw.store.saveStatus(s.fetching(time.Now().UTC())); err != nil {
+		return nil, err
+	}
+
 	// call worker
 	reply, err := qw.workerClient.Do(ctx, queuedSeed)
 	if err != nil {
+		qw.store.saveStatus(s.failed(err))
 		return nil, err
 	}
 
@@ -139,6 +148,14 @@ func (qw *queueWorker) dispatch(ctx context.Context, queuedSeed *api.QueuedSeed)
 		reply.QueuedSeed.Parameter.MaxId = reply.GetMaxId()
 		reply.QueuedSeed.Seq++
 		qw.store.enqueueSeed(reply.QueuedSeed)
+
+		// update execution count
+		s.Statuses += reply.Count
+		qw.store.saveStatus(s)
+	} else {
+		// update execution count and state
+		s.Statuses += reply.Count
+		qw.store.saveStatus(s.finished(time.Now().UTC()))
 	}
 
 	// only save/update parameters if first in sequence

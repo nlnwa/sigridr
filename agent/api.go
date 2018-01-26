@@ -38,21 +38,36 @@ func (a *agentApi) Do(ctx context.Context, req *api.DoJobRequest) (*pb.Empty, er
 	if err != nil {
 		return nil, err
 	}
-
 	if seed.Meta.Name == "" {
 		return new(pb.Empty), nil
 	}
-
-	queuedSeed := &api.QueuedSeed{
-		SeedId:    seed.Id,
-		Parameter: &api.Parameter{Query: seed.Meta.Name},
+	job, err := new(types.Job).FromProto(req.Job)
+	if err != nil {
+		return nil, err
 	}
+
 	if err := a.store.connect(); err != nil {
 		return nil, err
+	}
+
+	s := newStatus(
+		withJob(job),
+		withSeed(seed),
+		withDefaultState())
+
+	id, err := a.store.saveStatus(s)
+	if err != nil {
+		return nil, err
+	}
+
+	queuedSeed := &api.QueuedSeed{
+		ExecutionId: id,
+		SeedId:      seed.Id,
+		Parameter:   &api.Parameter{Query: seed.Meta.Name},
 	}
 	if err := a.store.enqueueSeed(queuedSeed); err != nil {
 		return nil, err
 	}
 
-	return new(pb.Empty), a.store.Disconnect()
+	return new(pb.Empty), a.store.disconnect()
 }

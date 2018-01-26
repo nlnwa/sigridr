@@ -18,6 +18,7 @@ It has these top-level messages:
 	Seed
 	Parameter
 	QueuedSeed
+	Execution
 	RateLimit
 	WorkRequest
 	WorkReply
