@@ -44,7 +44,11 @@ func (c *ApiClient) Dial() (err error) {
 }
 
 func (c *ApiClient) Hangup() error {
-	return c.cc.Close()
+	if c.cc != nil {
+		return c.cc.Close()
+	} else {
+		return nil
+	}
 }
 
 func (c *ApiClient) Do(ctx context.Context, queuedSeed *api.QueuedSeed) (*api.WorkReply, error) {
