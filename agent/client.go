@@ -45,7 +45,11 @@ func (ac *Client) Dial() (err error) {
 }
 
 func (ac *Client) Hangup() error {
-	return ac.cc.Close()
+	if ac.cc != nil {
+		return ac.cc.Close()
+	} else {
+		return nil
+	}
 }
 
 func (ac *Client) Do(job *types.Job, seed *types.Seed) error {
