@@ -59,14 +59,14 @@ func initDb(dbHost string, dbPort int, dbName string) error {
 	tables := []string{"result", "job", "entity", "seed", "queue", "parameter", "execution"}
 
 	if err := db.CreateDatabase(dbName); err != nil {
-		return err
+		logger.Info("Database already exists", "err", err)
 	} else {
 		logger.Info("Created database", "name", dbName)
 	}
 
 	for _, table := range tables {
 		if err := db.CreateTable(table); err != nil {
-			return err
+			logger.Info("Table already exists", "err", err)
 		} else {
 			logger.Info("Created table", "name", table)
 		}
