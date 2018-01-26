@@ -8,7 +8,7 @@ VERSION?=$(shell ./scripts/git-version)
 ## -X Set the value of the string variable in importpath named name to value.
 LD_FLAGS:= "-w -X $(REPO_PATH)/version.Version=$(VERSION)"
 
-.PHONY: release-binary install-dep api clean-api
+.PHONY: release-binary install install-dep api
 
 ## -v print the names of packages as they are complied.
 install:
@@ -19,6 +19,6 @@ api:
 
 install-dep:
 	@go get github.com/golang/dep/cmd/dep
-	@dep ensure
+	@dep ensure -vendor-only
 
 release-binary: api install-dep install
