@@ -31,9 +31,9 @@ var debug bool
 var logger = log.New()
 
 var rootCmd = &cobra.Command{
-	Use:   "sigridrctl",
-	Short: "Twitter API client",
-	Long:  `Twitter API client`,
+	Use:   "sigridr",
+	Short: "Twitter API harvester",
+	Long:  `Twitter API harvester`,
 }
 
 func init() {
