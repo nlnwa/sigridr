@@ -134,6 +134,7 @@ func (qw *queueWorker) dispatch(ctx context.Context, queuedSeed *api.QueuedSeed)
 	// call worker
 	reply, err := qw.workerClient.Do(ctx, queuedSeed)
 	if err != nil {
+		// TODO increment fetch attempts
 		qw.store.saveStatus(s.failed(err))
 		return nil, err
 	}
@@ -149,6 +150,7 @@ func (qw *queueWorker) dispatch(ctx context.Context, queuedSeed *api.QueuedSeed)
 		reply.QueuedSeed.Seq++
 		qw.store.enqueueSeed(reply.QueuedSeed)
 
+		// TODO MAYBE set sleep state if rate limit reached
 		// update execution count
 		s.Statuses += reply.Count
 		qw.store.saveStatus(s)
