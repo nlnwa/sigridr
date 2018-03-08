@@ -35,11 +35,11 @@ var controllerCmd = &cobra.Command{
 	Short: "Sigridr controller service",
 	Long:  "Sigridr controller",
 	Run: func(cmd *cobra.Command, args []string) {
-		dbHost, dbPort, dbName := globalFlags()
+		dbHost, dbPort, dbName, dbUser, dbPassword := globalFlags()
 		agentHost := controllerViper.GetString("agent-host")
 		agentPort := controllerViper.GetInt("agent-port")
 
-		if err := control(dbHost, dbPort, dbName, agentHost, agentPort); err != nil {
+		if err := control(agentHost, agentPort, dbHost, dbPort, dbName, dbUser, dbPassword); err != nil {
 			logger.Error(err.Error())
 			os.Exit(2)
 		}
@@ -62,13 +62,15 @@ func init() {
 	controllerViper.BindPFlag("agent-port", cmd.Flags().Lookup("agent-port"))
 }
 
-func control(dbHost string, dbPort int, dbName string, agentHost string, agentPort int) error {
+func control(agentHost string, agentPort int, dbHost string, dbPort int, dbName string, dbUser string, dbPassword string) error {
 	config := controller.Config{
-		AgentAddress: fmt.Sprintf("%s:%d", agentHost, agentPort),
-		DatabaseName: dbName,
-		DatabaseHost: dbHost,
-		DatabasePort: dbPort,
-		Logger:       logger,
+		AgentAddress:     fmt.Sprintf("%s:%d", agentHost, agentPort),
+		DatabaseName:     dbName,
+		DatabaseHost:     dbHost,
+		DatabasePort:     dbPort,
+		DatabaseUser:     dbUser,
+		DatabasePassword: dbPassword,
+		Logger:           logger,
 	}
 
 	scheduler := cron.NewScheduler()

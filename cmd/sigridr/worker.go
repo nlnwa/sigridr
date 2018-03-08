@@ -34,11 +34,11 @@ var workerCmd = &cobra.Command{
 	Short: "Sigridr worker service",
 	Long:  `Sigridr worker`,
 	Run: func(cmd *cobra.Command, args []string) {
-		dbHost, dbPort, dbName := globalFlags()
+		dbHost, dbPort, dbName, dbUser, dbPassword := globalFlags()
 		port := workerViper.GetInt("port")
 		accessToken := workerViper.GetString("access-token")
 
-		if err := work(dbHost, dbPort, dbName, port, accessToken); err != nil {
+		if err := work(port, accessToken, dbHost, dbPort, dbName, dbUser, dbPassword); err != nil {
 			logger.Error(err.Error())
 			os.Exit(1)
 		}
@@ -61,13 +61,15 @@ func init() {
 	workerViper.BindPFlag("access-token", cmd.Flags().Lookup("access-token"))
 }
 
-func work(dbHost string, dbPort int, dbName string, port int, accessToken string) error {
+func work(port int, accessToken string, dbHost string, dbPort int, dbName string, dbUser string, dbPassword string) error {
 	apiConfig := worker.Config{
-		AccessToken:  accessToken,
-		DatabaseHost: dbHost,
-		DatabasePort: dbPort,
-		DatabaseName: dbName,
-		Logger:       logger,
+		AccessToken:      accessToken,
+		DatabaseHost:     dbHost,
+		DatabasePort:     dbPort,
+		DatabaseName:     dbName,
+		DatabaseUser:     dbUser,
+		DatabasePassword: dbPassword,
+		Logger:           logger,
 	}
 
 	var grpcOpts []grpc.ServerOption

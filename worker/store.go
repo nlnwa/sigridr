@@ -23,7 +23,10 @@ type workerStore struct {
 }
 
 func newStore(c Config) *workerStore {
-	db := database.New(database.WithAddress(c.DatabaseHost, c.DatabasePort), database.WithName(c.DatabaseName))
+	db := database.New(
+		database.WithAddress(c.DatabaseHost, c.DatabasePort),
+		database.WithName(c.DatabaseName),
+		database.WithCredentials(c.DatabaseUser, c.DatabasePassword))
 	db.SetTags("json")
 
 	return &workerStore{

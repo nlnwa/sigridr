@@ -31,9 +31,9 @@ var initDbCmd = &cobra.Command{
 	Short: "Initialize database",
 	Long:  `Initialize database`,
 	Run: func(cmd *cobra.Command, args []string) {
-		dbHost, dbPort, dbName := globalFlags()
+		dbHost, dbPort, dbName, dbUser, dbPassword := globalFlags()
 
-		if err := initDb(dbHost, dbPort, dbName); err != nil {
+		if err := initDb(dbHost, dbPort, dbName, dbUser, dbPassword); err != nil {
 			logger.Error(err.Error())
 		}
 	},
@@ -43,10 +43,13 @@ func init() {
 	rootCmd.AddCommand(initDbCmd)
 }
 
-func initDb(dbHost string, dbPort int, dbName string) error {
+func initDb(dbHost string, dbPort int, dbName string, dbUser string, dbPassword string) error {
 	logger.Info("Initializing database", "dbHost", dbHost, "dbPort", dbPort, "dbName", dbName)
 
-	db := database.New(database.WithAddress(dbHost, dbPort), database.WithName(dbName))
+	db := database.New(
+		database.WithAddress(dbHost, dbPort),
+		database.WithName(dbName),
+		database.WithCredentials(dbUser, dbPassword))
 	db.SetTags("json")
 
 	if err := db.Connect(); err != nil {
