@@ -27,7 +27,10 @@ type agentStore struct {
 }
 
 func newStore(c Config) *agentStore {
-	db := database.New(database.WithAddress(c.DatabaseHost, c.DatabasePort), database.WithName(c.DatabaseName))
+	db := database.New(
+		database.WithAddress(c.DatabaseHost, c.DatabasePort),
+		database.WithName(c.DatabaseName),
+		database.WithCredentials(c.DatabaseUser, c.DatabasePassword))
 	db.SetTags("json")
 
 	return &agentStore{db}

@@ -44,11 +44,15 @@ func init() {
 	rootCmd.PersistentFlags().String("db-host", "localhost", "database hostname")
 	rootCmd.PersistentFlags().Int("db-port", 28015, "database port")
 	rootCmd.PersistentFlags().String("db-name", "sigridr", "database name")
+	rootCmd.PersistentFlags().String("db-user", "sigridr", "database user")
+	rootCmd.PersistentFlags().String("db-password", "", "database password")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug")
 
 	viper.BindPFlag("db-name", rootCmd.PersistentFlags().Lookup("db-name"))
 	viper.BindPFlag("db-host", rootCmd.PersistentFlags().Lookup("db-host"))
 	viper.BindPFlag("db-port", rootCmd.PersistentFlags().Lookup("db-port"))
+	viper.BindPFlag("db-user", rootCmd.PersistentFlags().Lookup("db-user"))
+	viper.BindPFlag("db-password", rootCmd.PersistentFlags().Lookup("db-password"))
 }
 
 func initViper(v *viper.Viper) {
@@ -56,10 +60,12 @@ func initViper(v *viper.Viper) {
 	v.AutomaticEnv()
 }
 
-func globalFlags() (dbHost string, dbPort int, dbName string) {
+func globalFlags() (dbHost string, dbPort int, dbName string, dbUser string, dbPassword string) {
 	dbHost = viper.GetString("db-host")
 	dbPort = viper.GetInt("db-port")
 	dbName = viper.GetString("db-name")
+	dbUser = viper.GetString("db-user")
+	dbPassword = viper.GetString("db-password")
 	return
 }
 

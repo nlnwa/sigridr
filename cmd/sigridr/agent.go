@@ -36,13 +36,13 @@ var agentCmd = &cobra.Command{
 	Short: "Sigridr agent service",
 	Long:  "Sigridr agent",
 	Run: func(cmd *cobra.Command, args []string) {
-		dbHost, dbPort, dbName := globalFlags()
+		dbHost, dbPort, dbName, dbUser, dbPassword := globalFlags()
 
 		port := agentViper.GetInt("port")
 		workerPort := agentViper.GetInt("worker-port")
 		workerHost := agentViper.GetString("worker-host")
 
-		if err := act(port, workerHost, workerPort, dbHost, dbPort, dbName); err != nil {
+		if err := act(port, workerHost, workerPort, dbHost, dbPort, dbName, dbUser, dbPassword); err != nil {
 			logger.Error(err.Error())
 		}
 	},
@@ -66,13 +66,15 @@ func init() {
 	agentViper.BindPFlag("worker-port", cmd.Flags().Lookup("worker-port"))
 }
 
-func act(port int, workerHost string, workerPort int, dbHost string, dbPort int, dbName string) error {
+func act(port int, workerHost string, workerPort int, dbHost string, dbPort int, dbName string, dbUser string, dbPassword string) error {
 	config := agent.Config{
-		WorkerAddress: fmt.Sprintf("%s:%d", workerHost, workerPort),
-		DatabaseHost:  dbHost,
-		DatabasePort:  dbPort,
-		DatabaseName:  dbName,
-		Logger:        logger,
+		WorkerAddress:    fmt.Sprintf("%s:%d", workerHost, workerPort),
+		DatabaseHost:     dbHost,
+		DatabasePort:     dbPort,
+		DatabaseName:     dbName,
+		DatabaseUser:     dbUser,
+		DatabasePassword: dbPassword,
+		Logger:           logger,
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

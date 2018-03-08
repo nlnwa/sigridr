@@ -27,11 +27,13 @@ import (
 )
 
 type Config struct {
-	AccessToken  string
-	DatabaseHost string
-	DatabasePort int
-	DatabaseName string
-	Logger       log.Logger
+	AccessToken      string
+	DatabaseHost     string
+	DatabasePort     int
+	DatabaseName     string
+	DatabaseUser     string
+	DatabasePassword string
+	Logger           log.Logger
 }
 
 type searchResult struct {

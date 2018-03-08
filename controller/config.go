@@ -19,9 +19,11 @@ import (
 )
 
 type Config struct {
-	AgentAddress string
-	DatabaseHost string
-	DatabasePort int
-	DatabaseName string
-	Logger       log.Logger
+	AgentAddress     string
+	DatabaseHost     string
+	DatabasePort     int
+	DatabaseName     string
+	DatabaseUser     string
+	DatabasePassword string
+	Logger           log.Logger
 }
