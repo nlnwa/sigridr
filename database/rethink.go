@@ -40,6 +40,13 @@ func WithAddress(host string, port int) ConnectOption {
 	}
 }
 
+func WithCredentials(username string, password string) ConnectOption {
+	return func(opts *r.ConnectOpts) {
+		opts.Username = username
+		opts.Password = password
+	}
+}
+
 func New(options ...ConnectOption) *Rethink {
 	var db Rethink
 	for _, option := range options {
