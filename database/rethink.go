@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	r "gopkg.in/gorethink/gorethink.v3"
+	r "gopkg.in/rebirthdb/rebirthdb-go.v4"
 )
 
 type Rethink struct {
