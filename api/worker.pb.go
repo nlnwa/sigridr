@@ -17,14 +17,42 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 type WorkRequest struct {
-	QueuedSeed *QueuedSeed `protobuf:"bytes,1,opt,name=queued_seed,json=queuedSeed" json:"queued_seed,omitempty"`
+	QueuedSeed           *QueuedSeed `protobuf:"bytes,1,opt,name=queued_seed,json=queuedSeed,proto3" json:"queued_seed,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
+	XXX_unrecognized     []byte      `json:"-"`
+	XXX_sizecache        int32       `json:"-"`
 }
 
-func (m *WorkRequest) Reset()                    { *m = WorkRequest{} }
-func (m *WorkRequest) String() string            { return proto.CompactTextString(m) }
-func (*WorkRequest) ProtoMessage()               {}
-func (*WorkRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
+func (m *WorkRequest) Reset()         { *m = WorkRequest{} }
+func (m *WorkRequest) String() string { return proto.CompactTextString(m) }
+func (*WorkRequest) ProtoMessage()    {}
+func (*WorkRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_worker_b5de0a220f008bcb, []int{0}
+}
+func (m *WorkRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_WorkRequest.Unmarshal(m, b)
+}
+func (m *WorkRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_WorkRequest.Marshal(b, m, deterministic)
+}
+func (dst *WorkRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkRequest.Merge(dst, src)
+}
+func (m *WorkRequest) XXX_Size() int {
+	return xxx_messageInfo_WorkRequest.Size(m)
+}
+func (m *WorkRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkRequest proto.InternalMessageInfo
 
 func (m *WorkRequest) GetQueuedSeed() *QueuedSeed {
 	if m != nil {
@@ -34,17 +62,39 @@ func (m *WorkRequest) GetQueuedSeed() *QueuedSeed {
 }
 
 type WorkReply struct {
-	QueuedSeed *QueuedSeed `protobuf:"bytes,1,opt,name=queued_seed,json=queuedSeed" json:"queued_seed,omitempty"`
-	Count      int32       `protobuf:"varint,2,opt,name=count" json:"count,omitempty"`
-	MaxId      string      `protobuf:"bytes,3,opt,name=max_id,json=maxId" json:"max_id,omitempty"`
-	SinceId    string      `protobuf:"bytes,4,opt,name=since_id,json=sinceId" json:"since_id,omitempty"`
-	RateLimit  *RateLimit  `protobuf:"bytes,15,opt,name=rate_limit,json=rateLimit" json:"rate_limit,omitempty"`
+	QueuedSeed           *QueuedSeed `protobuf:"bytes,1,opt,name=queued_seed,json=queuedSeed,proto3" json:"queued_seed,omitempty"`
+	Count                int32       `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
+	MaxId                string      `protobuf:"bytes,3,opt,name=max_id,json=maxId,proto3" json:"max_id,omitempty"`
+	SinceId              string      `protobuf:"bytes,4,opt,name=since_id,json=sinceId,proto3" json:"since_id,omitempty"`
+	RateLimit            *RateLimit  `protobuf:"bytes,15,opt,name=rate_limit,json=rateLimit,proto3" json:"rate_limit,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
+	XXX_unrecognized     []byte      `json:"-"`
+	XXX_sizecache        int32       `json:"-"`
 }
 
-func (m *WorkReply) Reset()                    { *m = WorkReply{} }
-func (m *WorkReply) String() string            { return proto.CompactTextString(m) }
-func (*WorkReply) ProtoMessage()               {}
-func (*WorkReply) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
+func (m *WorkReply) Reset()         { *m = WorkReply{} }
+func (m *WorkReply) String() string { return proto.CompactTextString(m) }
+func (*WorkReply) ProtoMessage()    {}
+func (*WorkReply) Descriptor() ([]byte, []int) {
+	return fileDescriptor_worker_b5de0a220f008bcb, []int{1}
+}
+func (m *WorkReply) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_WorkReply.Unmarshal(m, b)
+}
+func (m *WorkReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_WorkReply.Marshal(b, m, deterministic)
+}
+func (dst *WorkReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkReply.Merge(dst, src)
+}
+func (m *WorkReply) XXX_Size() int {
+	return xxx_messageInfo_WorkReply.Size(m)
+}
+func (m *WorkReply) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkReply.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkReply proto.InternalMessageInfo
 
 func (m *WorkReply) GetQueuedSeed() *QueuedSeed {
 	if m != nil {
@@ -94,8 +144,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for Worker service
-
+// WorkerClient is the client API for Worker service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type WorkerClient interface {
 	Do(ctx context.Context, in *WorkRequest, opts ...grpc.CallOption) (*WorkReply, error)
 }
@@ -110,15 +161,14 @@ func NewWorkerClient(cc *grpc.ClientConn) WorkerClient {
 
 func (c *workerClient) Do(ctx context.Context, in *WorkRequest, opts ...grpc.CallOption) (*WorkReply, error) {
 	out := new(WorkReply)
-	err := grpc.Invoke(ctx, "/api.Worker/Do", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/api.Worker/Do", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for Worker service
-
+// WorkerServer is the server API for Worker service.
 type WorkerServer interface {
 	Do(context.Context, *WorkRequest) (*WorkReply, error)
 }
@@ -158,9 +208,9 @@ var _Worker_serviceDesc = grpc.ServiceDesc{
 	Metadata: "worker.proto",
 }
 
-func init() { proto.RegisterFile("worker.proto", fileDescriptor2) }
+func init() { proto.RegisterFile("worker.proto", fileDescriptor_worker_b5de0a220f008bcb) }
 
-var fileDescriptor2 = []byte{
+var fileDescriptor_worker_b5de0a220f008bcb = []byte{
 	// 242 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x90, 0x31, 0x4f, 0xc3, 0x30,
 	0x14, 0x84, 0x71, 0x4b, 0x02, 0x79, 0xa9, 0x5a, 0x64, 0x81, 0x14, 0x3a, 0x45, 0x99, 0xb2, 0x10,

@@ -6,12 +6,18 @@ package api
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import google_protobuf1 "github.com/golang/protobuf/ptypes/timestamp"
+import timestamp "github.com/golang/protobuf/ptypes/timestamp"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Execution_State int32
 
@@ -44,17 +50,41 @@ var Execution_State_value = map[string]int32{
 func (x Execution_State) String() string {
 	return proto.EnumName(Execution_State_name, int32(x))
 }
-func (Execution_State) EnumDescriptor() ([]byte, []int) { return fileDescriptor1, []int{7, 0} }
-
-type Label struct {
-	Key   string `protobuf:"bytes,1,opt,name=key" json:"key,omitempty"`
-	Value string `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
+func (Execution_State) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_schema_a5d23c4c3c8d2292, []int{7, 0}
 }
 
-func (m *Label) Reset()                    { *m = Label{} }
-func (m *Label) String() string            { return proto.CompactTextString(m) }
-func (*Label) ProtoMessage()               {}
-func (*Label) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+type Label struct {
+	Key                  string   `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value                string   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Label) Reset()         { *m = Label{} }
+func (m *Label) String() string { return proto.CompactTextString(m) }
+func (*Label) ProtoMessage()    {}
+func (*Label) Descriptor() ([]byte, []int) {
+	return fileDescriptor_schema_a5d23c4c3c8d2292, []int{0}
+}
+func (m *Label) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Label.Unmarshal(m, b)
+}
+func (m *Label) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Label.Marshal(b, m, deterministic)
+}
+func (dst *Label) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Label.Merge(dst, src)
+}
+func (m *Label) XXX_Size() int {
+	return xxx_messageInfo_Label.Size(m)
+}
+func (m *Label) XXX_DiscardUnknown() {
+	xxx_messageInfo_Label.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Label proto.InternalMessageInfo
 
 func (m *Label) GetKey() string {
 	if m != nil {
@@ -71,19 +101,41 @@ func (m *Label) GetValue() string {
 }
 
 type Meta struct {
-	Name           string                      `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Description    string                      `protobuf:"bytes,2,opt,name=description" json:"description,omitempty"`
-	Created        *google_protobuf1.Timestamp `protobuf:"bytes,3,opt,name=created" json:"created,omitempty"`
-	CreatedBy      string                      `protobuf:"bytes,4,opt,name=created_by,json=createdBy" json:"created_by,omitempty"`
-	LastModified   *google_protobuf1.Timestamp `protobuf:"bytes,5,opt,name=last_modified,json=lastModified" json:"last_modified,omitempty"`
-	LastModifiedBy string                      `protobuf:"bytes,6,opt,name=last_modified_by,json=lastModifiedBy" json:"last_modified_by,omitempty"`
-	Label          []*Label                    `protobuf:"bytes,7,rep,name=label" json:"label,omitempty"`
+	Name                 string               `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description          string               `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Created              *timestamp.Timestamp `protobuf:"bytes,3,opt,name=created,proto3" json:"created,omitempty"`
+	CreatedBy            string               `protobuf:"bytes,4,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
+	LastModified         *timestamp.Timestamp `protobuf:"bytes,5,opt,name=last_modified,json=lastModified,proto3" json:"last_modified,omitempty"`
+	LastModifiedBy       string               `protobuf:"bytes,6,opt,name=last_modified_by,json=lastModifiedBy,proto3" json:"last_modified_by,omitempty"`
+	Label                []*Label             `protobuf:"bytes,7,rep,name=label,proto3" json:"label,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
 }
 
-func (m *Meta) Reset()                    { *m = Meta{} }
-func (m *Meta) String() string            { return proto.CompactTextString(m) }
-func (*Meta) ProtoMessage()               {}
-func (*Meta) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{1} }
+func (m *Meta) Reset()         { *m = Meta{} }
+func (m *Meta) String() string { return proto.CompactTextString(m) }
+func (*Meta) ProtoMessage()    {}
+func (*Meta) Descriptor() ([]byte, []int) {
+	return fileDescriptor_schema_a5d23c4c3c8d2292, []int{1}
+}
+func (m *Meta) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Meta.Unmarshal(m, b)
+}
+func (m *Meta) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Meta.Marshal(b, m, deterministic)
+}
+func (dst *Meta) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Meta.Merge(dst, src)
+}
+func (m *Meta) XXX_Size() int {
+	return xxx_messageInfo_Meta.Size(m)
+}
+func (m *Meta) XXX_DiscardUnknown() {
+	xxx_messageInfo_Meta.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Meta proto.InternalMessageInfo
 
 func (m *Meta) GetName() string {
 	if m != nil {
@@ -99,7 +151,7 @@ func (m *Meta) GetDescription() string {
 	return ""
 }
 
-func (m *Meta) GetCreated() *google_protobuf1.Timestamp {
+func (m *Meta) GetCreated() *timestamp.Timestamp {
 	if m != nil {
 		return m.Created
 	}
@@ -113,7 +165,7 @@ func (m *Meta) GetCreatedBy() string {
 	return ""
 }
 
-func (m *Meta) GetLastModified() *google_protobuf1.Timestamp {
+func (m *Meta) GetLastModified() *timestamp.Timestamp {
 	if m != nil {
 		return m.LastModified
 	}
@@ -135,14 +187,36 @@ func (m *Meta) GetLabel() []*Label {
 }
 
 type Entity struct {
-	Id   string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	Meta *Meta  `protobuf:"bytes,2,opt,name=meta" json:"meta,omitempty"`
+	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Meta                 *Meta    `protobuf:"bytes,2,opt,name=meta,proto3" json:"meta,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Entity) Reset()                    { *m = Entity{} }
-func (m *Entity) String() string            { return proto.CompactTextString(m) }
-func (*Entity) ProtoMessage()               {}
-func (*Entity) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{2} }
+func (m *Entity) Reset()         { *m = Entity{} }
+func (m *Entity) String() string { return proto.CompactTextString(m) }
+func (*Entity) ProtoMessage()    {}
+func (*Entity) Descriptor() ([]byte, []int) {
+	return fileDescriptor_schema_a5d23c4c3c8d2292, []int{2}
+}
+func (m *Entity) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Entity.Unmarshal(m, b)
+}
+func (m *Entity) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Entity.Marshal(b, m, deterministic)
+}
+func (dst *Entity) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Entity.Merge(dst, src)
+}
+func (m *Entity) XXX_Size() int {
+	return xxx_messageInfo_Entity.Size(m)
+}
+func (m *Entity) XXX_DiscardUnknown() {
+	xxx_messageInfo_Entity.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Entity proto.InternalMessageInfo
 
 func (m *Entity) GetId() string {
 	if m != nil {
@@ -159,18 +233,40 @@ func (m *Entity) GetMeta() *Meta {
 }
 
 type Job struct {
-	Id             string                      `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	Meta           *Meta                       `protobuf:"bytes,2,opt,name=meta" json:"meta,omitempty"`
-	CronExpression string                      `protobuf:"bytes,3,opt,name=cron_expression,json=cronExpression" json:"cron_expression,omitempty"`
-	ValidFrom      *google_protobuf1.Timestamp `protobuf:"bytes,4,opt,name=valid_from,json=validFrom" json:"valid_from,omitempty"`
-	ValidTo        *google_protobuf1.Timestamp `protobuf:"bytes,5,opt,name=valid_to,json=validTo" json:"valid_to,omitempty"`
-	Disabled       bool                        `protobuf:"varint,15,opt,name=disabled" json:"disabled,omitempty"`
+	Id                   string               `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Meta                 *Meta                `protobuf:"bytes,2,opt,name=meta,proto3" json:"meta,omitempty"`
+	CronExpression       string               `protobuf:"bytes,3,opt,name=cron_expression,json=cronExpression,proto3" json:"cron_expression,omitempty"`
+	ValidFrom            *timestamp.Timestamp `protobuf:"bytes,4,opt,name=valid_from,json=validFrom,proto3" json:"valid_from,omitempty"`
+	ValidTo              *timestamp.Timestamp `protobuf:"bytes,5,opt,name=valid_to,json=validTo,proto3" json:"valid_to,omitempty"`
+	Disabled             bool                 `protobuf:"varint,15,opt,name=disabled,proto3" json:"disabled,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
 }
 
-func (m *Job) Reset()                    { *m = Job{} }
-func (m *Job) String() string            { return proto.CompactTextString(m) }
-func (*Job) ProtoMessage()               {}
-func (*Job) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{3} }
+func (m *Job) Reset()         { *m = Job{} }
+func (m *Job) String() string { return proto.CompactTextString(m) }
+func (*Job) ProtoMessage()    {}
+func (*Job) Descriptor() ([]byte, []int) {
+	return fileDescriptor_schema_a5d23c4c3c8d2292, []int{3}
+}
+func (m *Job) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Job.Unmarshal(m, b)
+}
+func (m *Job) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Job.Marshal(b, m, deterministic)
+}
+func (dst *Job) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Job.Merge(dst, src)
+}
+func (m *Job) XXX_Size() int {
+	return xxx_messageInfo_Job.Size(m)
+}
+func (m *Job) XXX_DiscardUnknown() {
+	xxx_messageInfo_Job.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Job proto.InternalMessageInfo
 
 func (m *Job) GetId() string {
 	if m != nil {
@@ -193,14 +289,14 @@ func (m *Job) GetCronExpression() string {
 	return ""
 }
 
-func (m *Job) GetValidFrom() *google_protobuf1.Timestamp {
+func (m *Job) GetValidFrom() *timestamp.Timestamp {
 	if m != nil {
 		return m.ValidFrom
 	}
 	return nil
 }
 
-func (m *Job) GetValidTo() *google_protobuf1.Timestamp {
+func (m *Job) GetValidTo() *timestamp.Timestamp {
 	if m != nil {
 		return m.ValidTo
 	}
@@ -215,17 +311,39 @@ func (m *Job) GetDisabled() bool {
 }
 
 type Seed struct {
-	Id       string   `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	Meta     *Meta    `protobuf:"bytes,2,opt,name=meta" json:"meta,omitempty"`
-	EntityId string   `protobuf:"bytes,3,opt,name=entity_id,json=entityId" json:"entity_id,omitempty"`
-	JobId    []string `protobuf:"bytes,4,rep,name=job_id,json=jobId" json:"job_id,omitempty"`
-	Disabled bool     `protobuf:"varint,15,opt,name=disabled" json:"disabled,omitempty"`
+	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Meta                 *Meta    `protobuf:"bytes,2,opt,name=meta,proto3" json:"meta,omitempty"`
+	EntityId             string   `protobuf:"bytes,3,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+	JobId                []string `protobuf:"bytes,4,rep,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	Disabled             bool     `protobuf:"varint,15,opt,name=disabled,proto3" json:"disabled,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Seed) Reset()                    { *m = Seed{} }
-func (m *Seed) String() string            { return proto.CompactTextString(m) }
-func (*Seed) ProtoMessage()               {}
-func (*Seed) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{4} }
+func (m *Seed) Reset()         { *m = Seed{} }
+func (m *Seed) String() string { return proto.CompactTextString(m) }
+func (*Seed) ProtoMessage()    {}
+func (*Seed) Descriptor() ([]byte, []int) {
+	return fileDescriptor_schema_a5d23c4c3c8d2292, []int{4}
+}
+func (m *Seed) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Seed.Unmarshal(m, b)
+}
+func (m *Seed) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Seed.Marshal(b, m, deterministic)
+}
+func (dst *Seed) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Seed.Merge(dst, src)
+}
+func (m *Seed) XXX_Size() int {
+	return xxx_messageInfo_Seed.Size(m)
+}
+func (m *Seed) XXX_DiscardUnknown() {
+	xxx_messageInfo_Seed.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Seed proto.InternalMessageInfo
 
 func (m *Seed) GetId() string {
 	if m != nil {
@@ -263,24 +381,46 @@ func (m *Seed) GetDisabled() bool {
 }
 
 type Parameter struct {
-	Id              string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	Query           string `protobuf:"bytes,3,opt,name=query" json:"query,omitempty"`
-	MaxId           string `protobuf:"bytes,4,opt,name=max_id,json=maxId" json:"max_id,omitempty"`
-	SinceId         string `protobuf:"bytes,5,opt,name=since_id,json=sinceId" json:"since_id,omitempty"`
-	Geocode         string `protobuf:"bytes,6,opt,name=geocode" json:"geocode,omitempty"`
-	Lang            string `protobuf:"bytes,7,opt,name=lang" json:"lang,omitempty"`
-	ResultType      string `protobuf:"bytes,8,opt,name=result_type,json=resultType" json:"result_type,omitempty"`
-	Count           int32  `protobuf:"varint,9,opt,name=count" json:"count,omitempty"`
-	Until           string `protobuf:"bytes,10,opt,name=until" json:"until,omitempty"`
-	IncludeEntities bool   `protobuf:"varint,11,opt,name=include_entities,json=includeEntities" json:"include_entities,omitempty"`
-	TweetMode       string `protobuf:"bytes,12,opt,name=tweet_mode,json=tweetMode" json:"tweet_mode,omitempty"`
-	Locale          string `protobuf:"bytes,13,opt,name=locale" json:"locale,omitempty"`
+	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Query                string   `protobuf:"bytes,3,opt,name=query,proto3" json:"query,omitempty"`
+	MaxId                string   `protobuf:"bytes,4,opt,name=max_id,json=maxId,proto3" json:"max_id,omitempty"`
+	SinceId              string   `protobuf:"bytes,5,opt,name=since_id,json=sinceId,proto3" json:"since_id,omitempty"`
+	Geocode              string   `protobuf:"bytes,6,opt,name=geocode,proto3" json:"geocode,omitempty"`
+	Lang                 string   `protobuf:"bytes,7,opt,name=lang,proto3" json:"lang,omitempty"`
+	ResultType           string   `protobuf:"bytes,8,opt,name=result_type,json=resultType,proto3" json:"result_type,omitempty"`
+	Count                int32    `protobuf:"varint,9,opt,name=count,proto3" json:"count,omitempty"`
+	Until                string   `protobuf:"bytes,10,opt,name=until,proto3" json:"until,omitempty"`
+	IncludeEntities      bool     `protobuf:"varint,11,opt,name=include_entities,json=includeEntities,proto3" json:"include_entities,omitempty"`
+	TweetMode            string   `protobuf:"bytes,12,opt,name=tweet_mode,json=tweetMode,proto3" json:"tweet_mode,omitempty"`
+	Locale               string   `protobuf:"bytes,13,opt,name=locale,proto3" json:"locale,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Parameter) Reset()                    { *m = Parameter{} }
-func (m *Parameter) String() string            { return proto.CompactTextString(m) }
-func (*Parameter) ProtoMessage()               {}
-func (*Parameter) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{5} }
+func (m *Parameter) Reset()         { *m = Parameter{} }
+func (m *Parameter) String() string { return proto.CompactTextString(m) }
+func (*Parameter) ProtoMessage()    {}
+func (*Parameter) Descriptor() ([]byte, []int) {
+	return fileDescriptor_schema_a5d23c4c3c8d2292, []int{5}
+}
+func (m *Parameter) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Parameter.Unmarshal(m, b)
+}
+func (m *Parameter) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Parameter.Marshal(b, m, deterministic)
+}
+func (dst *Parameter) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Parameter.Merge(dst, src)
+}
+func (m *Parameter) XXX_Size() int {
+	return xxx_messageInfo_Parameter.Size(m)
+}
+func (m *Parameter) XXX_DiscardUnknown() {
+	xxx_messageInfo_Parameter.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Parameter proto.InternalMessageInfo
 
 func (m *Parameter) GetId() string {
 	if m != nil {
@@ -367,17 +507,39 @@ func (m *Parameter) GetLocale() string {
 }
 
 type QueuedSeed struct {
-	Id          string     `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	Seq         int32      `protobuf:"varint,2,opt,name=seq" json:"seq,omitempty"`
-	ExecutionId string     `protobuf:"bytes,3,opt,name=execution_id,json=executionId" json:"execution_id,omitempty"`
-	SeedId      string     `protobuf:"bytes,4,opt,name=seed_id,json=seedId" json:"seed_id,omitempty"`
-	Parameter   *Parameter `protobuf:"bytes,5,opt,name=parameter" json:"parameter,omitempty"`
+	Id                   string     `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Seq                  int32      `protobuf:"varint,2,opt,name=seq,proto3" json:"seq,omitempty"`
+	ExecutionId          string     `protobuf:"bytes,3,opt,name=execution_id,json=executionId,proto3" json:"execution_id,omitempty"`
+	SeedId               string     `protobuf:"bytes,4,opt,name=seed_id,json=seedId,proto3" json:"seed_id,omitempty"`
+	Parameter            *Parameter `protobuf:"bytes,5,opt,name=parameter,proto3" json:"parameter,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
+	XXX_unrecognized     []byte     `json:"-"`
+	XXX_sizecache        int32      `json:"-"`
 }
 
-func (m *QueuedSeed) Reset()                    { *m = QueuedSeed{} }
-func (m *QueuedSeed) String() string            { return proto.CompactTextString(m) }
-func (*QueuedSeed) ProtoMessage()               {}
-func (*QueuedSeed) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{6} }
+func (m *QueuedSeed) Reset()         { *m = QueuedSeed{} }
+func (m *QueuedSeed) String() string { return proto.CompactTextString(m) }
+func (*QueuedSeed) ProtoMessage()    {}
+func (*QueuedSeed) Descriptor() ([]byte, []int) {
+	return fileDescriptor_schema_a5d23c4c3c8d2292, []int{6}
+}
+func (m *QueuedSeed) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_QueuedSeed.Unmarshal(m, b)
+}
+func (m *QueuedSeed) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_QueuedSeed.Marshal(b, m, deterministic)
+}
+func (dst *QueuedSeed) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueuedSeed.Merge(dst, src)
+}
+func (m *QueuedSeed) XXX_Size() int {
+	return xxx_messageInfo_QueuedSeed.Size(m)
+}
+func (m *QueuedSeed) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueuedSeed.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueuedSeed proto.InternalMessageInfo
 
 func (m *QueuedSeed) GetId() string {
 	if m != nil {
@@ -415,20 +577,42 @@ func (m *QueuedSeed) GetParameter() *Parameter {
 }
 
 type Execution struct {
-	Id        string                      `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	State     Execution_State             `protobuf:"varint,2,opt,name=state,enum=api.Execution_State" json:"state,omitempty"`
-	JobId     string                      `protobuf:"bytes,3,opt,name=job_id,json=jobId" json:"job_id,omitempty"`
-	SeedId    string                      `protobuf:"bytes,4,opt,name=seed_id,json=seedId" json:"seed_id,omitempty"`
-	StartTime *google_protobuf1.Timestamp `protobuf:"bytes,6,opt,name=start_time,json=startTime" json:"start_time,omitempty"`
-	EndTime   *google_protobuf1.Timestamp `protobuf:"bytes,7,opt,name=end_time,json=endTime" json:"end_time,omitempty"`
-	Statuses  int32                       `protobuf:"varint,8,opt,name=statuses" json:"statuses,omitempty"`
-	Error     string                      `protobuf:"bytes,15,opt,name=error" json:"error,omitempty"`
+	Id                   string               `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	State                Execution_State      `protobuf:"varint,2,opt,name=state,proto3,enum=api.Execution_State" json:"state,omitempty"`
+	JobId                string               `protobuf:"bytes,3,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	SeedId               string               `protobuf:"bytes,4,opt,name=seed_id,json=seedId,proto3" json:"seed_id,omitempty"`
+	StartTime            *timestamp.Timestamp `protobuf:"bytes,6,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	EndTime              *timestamp.Timestamp `protobuf:"bytes,7,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	Statuses             int32                `protobuf:"varint,8,opt,name=statuses,proto3" json:"statuses,omitempty"`
+	Error                string               `protobuf:"bytes,15,opt,name=error,proto3" json:"error,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
 }
 
-func (m *Execution) Reset()                    { *m = Execution{} }
-func (m *Execution) String() string            { return proto.CompactTextString(m) }
-func (*Execution) ProtoMessage()               {}
-func (*Execution) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{7} }
+func (m *Execution) Reset()         { *m = Execution{} }
+func (m *Execution) String() string { return proto.CompactTextString(m) }
+func (*Execution) ProtoMessage()    {}
+func (*Execution) Descriptor() ([]byte, []int) {
+	return fileDescriptor_schema_a5d23c4c3c8d2292, []int{7}
+}
+func (m *Execution) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Execution.Unmarshal(m, b)
+}
+func (m *Execution) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Execution.Marshal(b, m, deterministic)
+}
+func (dst *Execution) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Execution.Merge(dst, src)
+}
+func (m *Execution) XXX_Size() int {
+	return xxx_messageInfo_Execution.Size(m)
+}
+func (m *Execution) XXX_DiscardUnknown() {
+	xxx_messageInfo_Execution.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Execution proto.InternalMessageInfo
 
 func (m *Execution) GetId() string {
 	if m != nil {
@@ -458,14 +642,14 @@ func (m *Execution) GetSeedId() string {
 	return ""
 }
 
-func (m *Execution) GetStartTime() *google_protobuf1.Timestamp {
+func (m *Execution) GetStartTime() *timestamp.Timestamp {
 	if m != nil {
 		return m.StartTime
 	}
 	return nil
 }
 
-func (m *Execution) GetEndTime() *google_protobuf1.Timestamp {
+func (m *Execution) GetEndTime() *timestamp.Timestamp {
 	if m != nil {
 		return m.EndTime
 	}
@@ -487,15 +671,37 @@ func (m *Execution) GetError() string {
 }
 
 type RateLimit struct {
-	Limit     int32                       `protobuf:"varint,1,opt,name=limit" json:"limit,omitempty"`
-	Remaining int32                       `protobuf:"varint,2,opt,name=remaining" json:"remaining,omitempty"`
-	Reset_    *google_protobuf1.Timestamp `protobuf:"bytes,3,opt,name=reset" json:"reset,omitempty"`
+	Limit                int32                `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	Remaining            int32                `protobuf:"varint,2,opt,name=remaining,proto3" json:"remaining,omitempty"`
+	Reset_               *timestamp.Timestamp `protobuf:"bytes,3,opt,name=reset,proto3" json:"reset,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
 }
 
-func (m *RateLimit) Reset()                    { *m = RateLimit{} }
-func (m *RateLimit) String() string            { return proto.CompactTextString(m) }
-func (*RateLimit) ProtoMessage()               {}
-func (*RateLimit) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{8} }
+func (m *RateLimit) Reset()         { *m = RateLimit{} }
+func (m *RateLimit) String() string { return proto.CompactTextString(m) }
+func (*RateLimit) ProtoMessage()    {}
+func (*RateLimit) Descriptor() ([]byte, []int) {
+	return fileDescriptor_schema_a5d23c4c3c8d2292, []int{8}
+}
+func (m *RateLimit) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RateLimit.Unmarshal(m, b)
+}
+func (m *RateLimit) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RateLimit.Marshal(b, m, deterministic)
+}
+func (dst *RateLimit) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RateLimit.Merge(dst, src)
+}
+func (m *RateLimit) XXX_Size() int {
+	return xxx_messageInfo_RateLimit.Size(m)
+}
+func (m *RateLimit) XXX_DiscardUnknown() {
+	xxx_messageInfo_RateLimit.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RateLimit proto.InternalMessageInfo
 
 func (m *RateLimit) GetLimit() int32 {
 	if m != nil {
@@ -511,7 +717,7 @@ func (m *RateLimit) GetRemaining() int32 {
 	return 0
 }
 
-func (m *RateLimit) GetReset_() *google_protobuf1.Timestamp {
+func (m *RateLimit) GetReset_() *timestamp.Timestamp {
 	if m != nil {
 		return m.Reset_
 	}
@@ -531,9 +737,9 @@ func init() {
 	proto.RegisterEnum("api.Execution_State", Execution_State_name, Execution_State_value)
 }
 
-func init() { proto.RegisterFile("schema.proto", fileDescriptor1) }
+func init() { proto.RegisterFile("schema.proto", fileDescriptor_schema_a5d23c4c3c8d2292) }
 
-var fileDescriptor1 = []byte{
+var fileDescriptor_schema_a5d23c4c3c8d2292 = []byte{
 	// 864 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x55, 0xdd, 0x6e, 0xe3, 0x44,
 	0x14, 0x26, 0x3f, 0x8e, 0xe3, 0x93, 0xfe, 0x58, 0xa3, 0x02, 0xa6, 0x80, 0x36, 0xf8, 0x86, 0x80,
