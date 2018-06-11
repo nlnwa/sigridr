@@ -24,11 +24,15 @@ type Label struct {
 }
 
 func (l *Label) ToProto() *api.Label {
-	label := api.Label(*l)
-	return &label
+	return &api.Label{
+		Key:   l.Key,
+		Value: l.Value,
+	}
 }
 
 func (l *Label) FromProto(label *api.Label) *Label {
-	m := Label(*label)
-	return &m
+	return &Label{
+		Key:   label.Key,
+		Value: label.Value,
+	}
 }
