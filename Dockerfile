@@ -1,21 +1,26 @@
 FROM golang:alpine
 
+ENV GO111MODULE=on
+
 RUN apk add --no-cache --update alpine-sdk protobuf protobuf-dev
+WORKDIR /go/src/github.com/nlnwa/sigridr
 
-COPY . /go/src/github.com/nlnwa/sigridr
+COPY go.mod go.sum ./
 
-RUN cd /go/src/github.com/nlnwa/sigridr \
-&& go generate github.com/nlnwa/sigridr/api \
-&& go get github.com/golang/dep/cmd/dep \
-&& dep ensure -vendor-only \
-&& VERSION=$(./scripts/git-version) \
-go install -v -ldflags "-w -X github.com/nlnwa/sigridr/version.Version=$(VERSION)" github.com/nlnwa/sigridr/cmd/...
+RUN go mod download
+
+COPY . .
+
+RUN VERSION=$(./scripts/git-version) \
+&& go generate ./api \
+&& go install -v -ldflags "-w -X github.com/nlnwa/sigridr/version.Version=${VERSION}" ./cmd/...
 # -w Omit the DWARF symbol table.
 # -X Set the value of the string variable in importpath named name to value.
 
 
-FROM alpine:3.7
-LABEL maintainer="nettarkivet@nb.no"
+FROM alpine:latest
+
+LABEL maintainer="marius.beck@nb.no"
 
 RUN apk add --no-cache --update ca-certificates
 
