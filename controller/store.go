@@ -16,7 +16,7 @@ package controller
 
 import (
 	"github.com/pkg/errors"
-	r "gopkg.in/rebirthdb/rebirthdb-go.v4"
+	r "gopkg.in/rethinkdb/rethinkdb-go.v5"
 
 	"github.com/nlnwa/sigridr/database"
 	"github.com/nlnwa/sigridr/types"

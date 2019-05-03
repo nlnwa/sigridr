@@ -40,7 +40,9 @@ func (c *dbCollector) GetJobs() []*cron.Job {
 		c.Error("failed to connect to database", "error", err)
 		return cronJobs
 	}
-	defer c.store.disconnect()
+	defer func() {
+		_ = c.store.disconnect()
+	}()
 
 	jobs, err := c.store.getJobs()
 	if err != nil {
@@ -93,14 +95,20 @@ func (jr *jobRunner) execute(job *types.Job) {
 	}
 	// get seeds of job
 	seeds, err := jr.store.getSeeds(job)
-	defer jr.store.disconnect()
+	defer func() {
+		_ = jr.store.disconnect()
+	}()
 	if err != nil {
 		jr.Error("failed getting seeds from store", "error", err.Error())
 		return
 	}
 	// connect agent
 	if len(seeds) > 0 {
-		jr.agentClient.Dial()
+		err = jr.agentClient.Dial()
+		if err != nil {
+			jr.Error("failed to dial agent", "error", err.Error())
+			return
+		}
 		defer jr.agentClient.Hangup()
 	}
 
